@@ -26,7 +26,8 @@ Library
                       Language.Elsa.Types,
                       Language.Elsa.Eval,
                       Language.Elsa.Parser,
-                      Language.Elsa.Runner
+                      Language.Elsa.Runner,
+		                  Language.Elsa.Synthesis
 
   Default-Extensions: OverloadedStrings
 
@@ -40,7 +41,8 @@ Library
                        directory,
                        filepath,
                        dequeue,
-                       json
+                       json,
+                       containers
 
   hs-source-dirs:      src
   default-language:    Haskell2010
