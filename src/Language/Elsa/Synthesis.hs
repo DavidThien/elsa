@@ -26,7 +26,7 @@ topDown numIt queue accum          = case queue of
   p :<| queue ->
     let unrolled = unrollWith expansion p
         ground   = unrollWith deBruijnsUpTo p
-    in  topDown (numIt - 1) (foldl (|>) queue unrolled) (accum + Prelude.length ground)
+    in  topDown (numIt - 1) (foldl (|>) queue unrolled) (accum ++ ground)
   Seq.Empty -> accum
 
 qHole = Seq.fromList [HHole]
@@ -44,3 +44,9 @@ deBruijnsUpTo maxIdx = [ HDeBruijn idx | idx <- [1 .. maxIdx] ]
 
 expansion :: Int -> [HExpr]
 expansion maxIdx = HLam HHole : [ HApp idx HHole | idx <- deBruijnsUpTo maxIdx ]
+
+bottomUp 0 indices = indices
+bottomUp level indices =
+  [ HLam e | e <- bottomUp (level - 1) nextIndices ]
+    ++ [ HApp e1 e2 | e1 <- Prelude.reverse indices, e2 <- bottomUp (level - 1) indices ]
+  where nextIndices = (HDeBruijn $ Prelude.length indices + 1) : indices
