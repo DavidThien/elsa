@@ -3,7 +3,7 @@ module Language.Elsa.Synthesis where
 import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 
--- | Lambda expressions with a whole. We use De Bruijn indices because it makes it
+-- | Lambda expressions with a hole. We use De Bruijn indices because it makes it
 -- | easier to keep track of the binders in scope when enumerating closed terms.
 data HExpr
   = HLam HExpr
