@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Language.Elsa.Eval (elsa, elsaOn, evalNO) where
+module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S
@@ -198,6 +198,27 @@ isNormEq :: Env a -> Expr a -> Expr a -> Bool
 isNormEq g e1 e2 = isEquiv g e1' e2
   where
     e1'          = traceShow ("evalNO" ++ show e1) $ evalNO (traceShow "CANON" $ canon g e1)
+
+evalNOLimited :: Expr a -> Int -> Maybe (Expr a)
+evalNOLimited e@(EVar {})    _ = Just e
+evalNOLimited (ELam b e l)   i = if i > 0
+                             then case evalNOLimited e (i - 1) of
+                               Just e' -> Just $ ELam b e' l
+                               Nothing -> Nothing
+                             else
+                              Nothing
+evalNOLimited (EApp e1 e2 l) i = if i > 0
+                             then case evalCBN e1 of
+                               ELam b e1' _ -> evalNOLimited (bSubst e1' (bindId b) e2) (i - 1)
+                               e1'          ->
+                                 case (evalNOLimited e1' (i - 1)) of
+                                   Just e1'' ->
+                                     case (evalNOLimited e2 (i - 1)) of
+                                       Just e2' -> Just $ EApp e1'' e2' l
+                                       Nothing  -> Nothing
+                                   Nothing   -> Nothing
+                             else
+                               Nothing
 
 -- | normal-order reduction
 evalNO :: Expr a -> Expr a
