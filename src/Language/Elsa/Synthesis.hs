@@ -2,6 +2,8 @@ module Language.Elsa.Synthesis where
 
 import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
+import           Language.Elsa.Types
+import           Language.Elsa.Eval
 
 -- | Lambda expressions with a hole. We use De Bruijn indices because it makes it
 -- | easier to keep track of the binders in scope when enumerating closed terms.
@@ -17,6 +19,25 @@ instance Show HExpr where
   show (HApp e1 e2   ) = printf "(%s %s)" (show e1) (show e2)
   show (HLam e       ) = printf "(λ.%s)" (show e)
   show HHole           = "□"
+
+hexprToExpr :: HExpr -> Int -> Maybe (Expr Int)
+hexprToExpr (HLam expr) n = do
+  case (hexprToExpr expr (n + 1)) of
+    Just x -> Just $ ELam (Bind (show n) 0) x 0
+    Nothing -> Nothing
+hexprToExpr (HApp expr1 expr2) n = do
+  case (hexprToExpr expr1 (n + 1)) of
+    Just x1 -> do
+      case (hexprToExpr expr2 (n + 1)) of
+        Just x2 -> Just $ EApp x1 x2 0
+        Nothing -> Nothing
+    Nothing -> Nothing
+hexprToExpr (HDeBruijn i) _ = Just $ EVar (show i) 0
+hexprToExpr HHole _ = Nothing
+
+-- | Evaluates an HExpr to its Expr normal form
+hexprNO :: HExpr -> Maybe Expr
+hexprNO e = evalNO <$> hexprToExpr e
 
 -- | Enumerates closed term in normal form. It basically enumerates terms in the
 -- | following grammar always picking indices in scope:

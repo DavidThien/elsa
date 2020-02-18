@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Language.Elsa.Eval (elsa, elsaOn) where
+module Language.Elsa.Eval (elsa, elsaOn, evalNO) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S
