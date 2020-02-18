@@ -71,3 +71,27 @@ bottomUp level indices =
   [ HLam e | e <- bottomUp (level - 1) nextIndices ]
     ++ [ HApp e1 e2 | e1 <- Prelude.reverse indices, e2 <- bottomUp (level - 1) indices ]
   where nextIndices = (HDeBruijn $ Prelude.length indices + 1) : indices
+
+mapFun :: [(Expr Int, Expr Int)] -> Maybe (Expr Int) -> Maybe Bool
+mapFun examples expr =
+  let foldFunction = (\(i, o) b -> do
+        boolVal <- case b of
+                     Nothing -> Just False
+                     Just x  -> Just x
+        case expr of
+          Nothing      -> Just False
+          Just exprVal -> Just (boolVal && (o == evalNO (EApp exprVal i 0))))
+  in
+      foldr foldFunction (Just True) examples
+
+synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Maybe (Expr Int)
+synthesizeEncoding examples n =
+  let hexprs = bottomUp n []
+      exprs = map (\x -> hexprToExpr x 1) hexprs
+      satisfyExamples = map (\x -> mapFun examples x) exprs
+  in
+      case elemIndexL (Just True) (fromList satisfyExamples) of
+        Just i  -> (exprs !! i)
+        Nothing -> if n > 5
+                     then Nothing
+                     else synthesizeEncoding examples (n + 1)
