@@ -36,8 +36,8 @@ hexprToExpr (HDeBruijn i) _ = Just $ EVar (show i) 0
 hexprToExpr HHole _ = Nothing
 
 -- | Evaluates an HExpr to its Expr normal form
-hexprNO :: HExpr -> Maybe Expr
-hexprNO e = evalNO <$> hexprToExpr e
+hexprNO :: HExpr -> Maybe (Expr Int)
+hexprNO e = evalNO <$> hexprToExpr e 1
 
 -- | Enumerates closed term in normal form. It basically enumerates terms in the
 -- | following grammar always picking indices in scope:
