@@ -4,6 +4,7 @@ import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
 import           Language.Elsa.Eval
+import           Debug.Trace
 
 -- | Lambda expressions with a hole. We use De Bruijn indices because it makes it
 -- | easier to keep track of the binders in scope when enumerating closed terms.
@@ -80,18 +81,21 @@ mapFun examples expr =
                      Just x  -> Just x
         case expr of
           Nothing      -> Just False
-          Just exprVal -> Just (boolVal && (o == evalNO (EApp exprVal i 0))))
+          Just exprVal ->
+            trace (show (EApp exprVal i 0)) $ case evalNOLimited (EApp exprVal i 0) 10 of
+              Just e' -> Just (boolVal && o == e')
+              Nothing -> Just False)
   in
       foldr foldFunction (Just True) examples
 
-synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Maybe (Expr Int)
-synthesizeEncoding examples n =
+synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> [HExpr] -> Maybe (Expr Int)
+synthesizeEncoding examples n prevSynth =
   let hexprs = bottomUp n []
       exprs = map (\x -> hexprToExpr x 1) hexprs
-      satisfyExamples = map (\x -> mapFun examples x) exprs
+      satisfyExamples = map (mapFun examples) exprs
   in
       case elemIndexL (Just True) (fromList satisfyExamples) of
         Just i  -> (exprs !! i)
-        Nothing -> if n > 5
+        Nothing -> if n > 15
                      then Nothing
-                     else synthesizeEncoding examples (n + 1)
+                     else synthesizeEncoding examples (n + 1) hexprs
