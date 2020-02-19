@@ -208,15 +208,19 @@ evalNOLimited (ELam b e l)   i = if i > 0
                              else
                               Nothing
 evalNOLimited (EApp e1 e2 l) i = if i > 0
-                             then case evalCBN e1 of
-                               ELam b e1' _ -> evalNOLimited (bSubst e1' (bindId b) e2) (i - 1)
-                               e1'          ->
+                             then case evalCBNLimited e1 (i - 1) of
+                               Just (ELam b e1' _) ->
+                                 case (bSubstLimited e1' (bindId b) e2 (i - 1)) of
+                                   Just e1'' -> evalNOLimited e1'' (i - 1)
+                                   Nothing -> Nothing
+                               Just e1'            ->
                                  case (evalNOLimited e1' (i - 1)) of
                                    Just e1'' ->
                                      case (evalNOLimited e2 (i - 1)) of
                                        Just e2' -> Just $ EApp e1'' e2' l
                                        Nothing  -> Nothing
                                    Nothing   -> Nothing
+                               Nothing -> Nothing
                              else
                                Nothing
 
@@ -228,6 +232,19 @@ evalNO (EApp e1 e2 l) = case evalCBN e1 of
                           ELam b e1' _ -> evalNO (bSubst e1' (bindId b) e2)
                           e1'          -> EApp (evalNO e1') (evalNO e2) l
 
+evalCBNLimited :: Expr a -> Int -> Maybe (Expr a)
+evalCBNLimited e@(EVar {}) _ = Just e
+evalCBNLimited e@(ELam {}) _ = Just e
+evalCBNLimited (EApp e1 e2 l) i = if i > 0
+                              then case evalCBNLimited e1 (i - 1) of
+                                Just (ELam b e1' _) ->
+                                  case (bSubstLimited e1' (bindId b) e2 (i - 1)) of
+                                    Just e1'' -> evalCBNLimited e1'' (i - 1)
+                                    Nothing -> Nothing
+                                Just e1'            -> Just (EApp e1' e2 l)
+                                Nothing -> Nothing
+                              else Nothing
+
 -- | call-by-name reduction
 evalCBN :: Expr a -> Expr a
 evalCBN e@(EVar {}) = e
@@ -235,6 +252,13 @@ evalCBN e@(ELam {}) = e
 evalCBN (EApp e1 e2 l) = case evalCBN e1 of
                           ELam b e1' _ -> evalCBN (bSubst e1' (bindId b) e2)
                           e1'          -> EApp e1' e2 l
+
+bSubstLimited :: Expr a -> Id -> Expr a -> Int -> Maybe (Expr a)
+bSubstLimited e x e' i = if i > 0
+                            then substLimited e (M.singleton x e'') (i - 1)
+                            else Nothing
+  where
+    e''                = e' -- alphaShift n e'
 
 -- | Force alpha-renaming to ensure capture avoiding subst
 bSubst :: Expr a -> Id -> Expr a -> Expr a
@@ -252,6 +276,28 @@ freeVars' :: Expr a -> M.HashMap Id a
 freeVars' (EVar x l)    = M.singleton x l
 freeVars' (ELam b e _)  = M.delete (bindId b)    (freeVars' e)
 freeVars' (EApp e e' _) = M.union  (freeVars' e) (freeVars' e')
+
+substLimited :: Expr a -> Env a -> Int -> Maybe (Expr a)
+substLimited e@(EVar v _)   su _ = Just (M.lookupDefault e v su)
+substLimited (EApp e1 e2 z) su i =
+  if i > 0
+     then case (substLimited e1 su (i - 1)) of
+            Just e1' ->
+              case (substLimited e2 su (i - 1)) of
+                Just e2' -> Just (EApp e1' e2' z)
+                Nothing  -> Nothing
+            Nothing  -> Nothing
+     else
+       Nothing
+substLimited (ELam b e z)   su i =
+  if i > 0
+     then case (substLimited e su' (i - 1)) of
+            Just e' -> Just (ELam b e' z)
+            Nothing -> Nothing
+     else
+       Nothing
+  where
+    su'                 = M.delete (bindId b) su
 
 subst :: Expr a -> Env a -> Expr a
 subst e@(EVar v _)   su = M.lookupDefault e v su
