@@ -49,3 +49,4 @@ css/
 *.smt2
 .liquid
 .dir-locals.el
+stack.yaml.lock
