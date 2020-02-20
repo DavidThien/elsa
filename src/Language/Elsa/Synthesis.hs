@@ -73,29 +73,26 @@ bottomUp level indices =
     ++ [ HApp e1 e2 | e1 <- Prelude.reverse indices, e2 <- bottomUp (level - 1) indices ]
   where nextIndices = (HDeBruijn $ Prelude.length indices + 1) : indices
 
-mapFun :: [(Expr Int, Expr Int)] -> Maybe (Expr Int) -> Maybe Bool
+mapFun :: [(Expr Int, Expr Int)] -> Maybe (Expr Int) -> Bool
 mapFun examples expr =
   let foldFunction = (\(i, o) b -> do
-        boolVal <- case b of
-                     Nothing -> Just False
-                     Just x  -> Just x
         case expr of
-          Nothing      -> Just False
+          Nothing      -> False
           Just exprVal ->
             trace (show (EApp exprVal i 0)) $ case evalNOLimited (EApp exprVal i 0) 10 of
-              Just e' -> Just (boolVal && o == e')
-              Nothing -> Just False)
+              Just e' -> (b && o == e')
+              Nothing -> False)
   in
-      foldr foldFunction (Just True) examples
+      foldr foldFunction True examples
 
-synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> [HExpr] -> Maybe (Expr Int)
-synthesizeEncoding examples n prevSynth =
+synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Maybe (Expr Int)
+synthesizeEncoding examples n =
   let hexprs = bottomUp n []
-      exprs = map (\x -> hexprToExpr x 1) hexprs
+      exprs = map (\x -> hexprToExpr x 1) hexprs :: [Maybe (Expr Int)]
       satisfyExamples = map (mapFun examples) exprs
   in
-      case elemIndexL (Just True) (fromList satisfyExamples) of
+      case elemIndexL True (fromList satisfyExamples) of
         Just i  -> (exprs !! i)
         Nothing -> if n > 15
                      then Nothing
-                     else synthesizeEncoding examples (n + 1) hexprs
+                     else synthesizeEncoding examples (n + 1)
