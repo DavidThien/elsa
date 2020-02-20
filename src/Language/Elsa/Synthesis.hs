@@ -1,5 +1,6 @@
 module Language.Elsa.Synthesis where
 
+import qualified Data.HashMap.Strict           as M
 import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
@@ -77,10 +78,7 @@ mapFun examples expr =
   let foldFunction = (\(i, o) b -> do
         case expr of
           Nothing      -> False
-          Just exprVal ->
-            case evalNOLimited (EApp exprVal i 0) 10 of
-              Just e' -> (b && o == e')
-              Nothing -> False)
+          Just exprVal -> b && (isTrnsEq M.empty (EApp exprVal i 0) o))
   in
       foldr foldFunction True examples
 
