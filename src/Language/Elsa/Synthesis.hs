@@ -4,7 +4,6 @@ import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
 import           Language.Elsa.Eval
-import           Debug.Trace
 
 -- | Lambda expressions with a hole. We use De Bruijn indices because it makes it
 -- | easier to keep track of the binders in scope when enumerating closed terms.
@@ -79,7 +78,7 @@ mapFun examples expr =
         case expr of
           Nothing      -> False
           Just exprVal ->
-            trace (show (EApp exprVal i 0)) $ case evalNOLimited (EApp exprVal i 0) 10 of
+            case evalNOLimited (EApp exprVal i 0) 10 of
               Just e' -> (b && o == e')
               Nothing -> False)
   in
