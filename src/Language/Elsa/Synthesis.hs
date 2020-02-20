@@ -1,6 +1,7 @@
 module Language.Elsa.Synthesis where
 
 import qualified Data.HashMap.Strict           as M
+import           Data.Maybe
 import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
@@ -73,23 +74,30 @@ bottomUp level indices =
     ++ [ HApp e1 e2 | e1 <- Prelude.reverse indices, e2 <- bottomUp (level - 1) indices ]
   where nextIndices = (HDeBruijn $ Prelude.length indices + 1) : indices
 
-mapFun :: [(Expr Int, Expr Int)] -> Maybe (Expr Int) -> Bool
-mapFun examples expr =
-  let foldFunction = (\(i, o) b -> do
-        case expr of
-          Nothing      -> False
-          Just exprVal -> b && (isTrnsEq M.empty (EApp exprVal i 0) o))
+testExamples :: [(Expr Int, Expr Int)] -> Expr Int -> Bool
+testExamples examples expr =
+  let env = M.singleton "test" expr
+      foldFunction = (\(i, o) b -> b && (isTrnsEq env i o))
   in
       foldr foldFunction True examples
 
+-- | Takes a list of input/output expressions where the input expression
+-- | has the free variable 'test' where the synthesized test expressions will
+-- | be inserted, and a number of iterations to run for. The synthesizer will
+-- | check to see if each input expression is transitively equal to the
+-- | output, and will return the first expression it finds that satifisfies
+-- | all the input/output examples.
 synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Maybe (Expr Int)
-synthesizeEncoding examples n =
+synthesizeEncoding examples max = synthesizeEncodingHelper examples 0 max
+
+synthesizeEncodingHelper :: [(Expr Int, Expr Int)] -> Int -> Int -> Maybe (Expr Int)
+synthesizeEncodingHelper examples n max =
   let hexprs = bottomUp n []
-      exprs = map (\x -> hexprToExpr x 1) hexprs :: [Maybe (Expr Int)]
-      satisfyExamples = map (mapFun examples) exprs
+      exprs = catMaybes $ map (\x -> hexprToExpr x 1) hexprs
+      satisfyExamples = map (testExamples examples) exprs
   in
       case elemIndexL True (fromList satisfyExamples) of
-        Just i  -> (exprs !! i)
-        Nothing -> if n > 15
+        Just i  -> Just (exprs !! i)
+        Nothing -> if n >= max
                      then Nothing
-                     else synthesizeEncoding examples (n + 1)
+                     else synthesizeEncodingHelper examples (n + 1) max
