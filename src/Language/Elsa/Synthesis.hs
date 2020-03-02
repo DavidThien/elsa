@@ -108,17 +108,19 @@ enumerateTerms' depth vars indices =
 -- | check to see if each input expression is transitively equal to the
 -- | output, and will return the first expression it finds that satifisfies
 -- | all the input/output examples.
-synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Maybe (Expr Int)
-synthesizeEncoding examples max = synthesizeEncodingHelper examples 0 max
+-- TODO: infer the number of variables for a generated function
+synthesizeEncoding :: [(Expr Int, Expr Int)] -> Int -> Int -> Maybe (Expr Int)
+synthesizeEncoding examples max vars = synthesizeEncodingHelper examples 0 max vars
 
-synthesizeEncodingHelper :: [(Expr Int, Expr Int)] -> Int -> Int -> Maybe (Expr Int)
-synthesizeEncodingHelper examples n max =
-  let hexprs = bottomUp n []
-      exprs = catMaybes $ map (\x -> hexprToExpr x 1) hexprs
+-- TODO: infer the number of variables for a generated function
+synthesizeEncodingHelper :: [(Expr Int, Expr Int)] -> Int -> Int -> Int -> Maybe (Expr Int)
+synthesizeEncodingHelper examples n max vars =
+  let hexprs = enumerateTerms n vars
+      exprs = catMaybes $ map (\x -> hexprToExpr x 0) hexprs
       satisfyExamples = map (testExamples examples) exprs
   in
       case elemIndexL True (fromList satisfyExamples) of
         Just i  -> Just (exprs !! i)
         Nothing -> if n >= max
                      then Nothing
-                     else synthesizeEncodingHelper examples (n + 1) max
+                     else synthesizeEncodingHelper examples (n + 1) max vars
