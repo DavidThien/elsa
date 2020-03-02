@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited, isTrnsEq) where
+module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited, isTrnsEq,
+                           isTrnsEqFuel) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S
@@ -76,6 +77,12 @@ isEq (NormEq _) = isNormEq
 isTrnsEq :: Env a -> Expr a -> Expr a -> Bool
 isTrnsEq g e1 e2 = Mb.isJust (findTrans (isEquiv g e2) (canon g e1))
 
+isTrnsEqFuel :: Env a -> Expr a -> Expr a -> Int -> Bool
+isTrnsEqFuel g e1 e2 f =
+  let test = (findTransFuel (isEquiv g e2) (canon g e1) f)
+      ans = Mb.isJust test
+   in ans
+
 isUnTrEq :: Env a -> Expr a -> Expr a -> Bool
 isUnTrEq g e1 e2 = isTrnsEq g e2 e1
 
@@ -89,6 +96,26 @@ findTrans p e = go S.empty (qInit e)
         else if p e
              then return e
              else go (S.insert e seen) (qPushes q (betas e))
+
+findTransFuel :: (Expr a -> Bool) -> Expr a -> Int -> Maybe (Expr a)
+findTransFuel p e f = go S.empty (qInit e) f
+  where
+    go seen q f =
+      if f > 0
+         then do
+           (e, q') <- qPop q
+           if S.member e seen
+              then go seen q' (f - 1)
+              else if p e
+                   then return e
+                   else let
+                        betasAns = (betas e)
+                        insertAns = (S.insert e seen)
+                        in
+                     go insertAns (qPushes q betasAns) (f - 1)
+         else
+           Nothing
+
 
 --------------------------------------------------------------------------------
 -- | Definition Equivalence
