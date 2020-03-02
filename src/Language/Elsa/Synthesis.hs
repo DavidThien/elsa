@@ -29,18 +29,18 @@ hexprToExpr (HLam expr) n = do
     Just x -> Just $ ELam (Bind (show n) 0) x 0
     Nothing -> Nothing
 hexprToExpr (HApp expr1 expr2) n = do
-  case (hexprToExpr expr1 (n + 1)) of
+  case (hexprToExpr expr1 n) of
     Just x1 -> do
-      case (hexprToExpr expr2 (n + 1)) of
+      case (hexprToExpr expr2 n) of
         Just x2 -> Just $ EApp x1 x2 0
         Nothing -> Nothing
     Nothing -> Nothing
-hexprToExpr (HDeBruijn i) _ = Just $ EVar (show i) 0
+hexprToExpr (HDeBruijn i) n = Just $ EVar (show $ (n - i) - 1) 0
 hexprToExpr HHole _ = Nothing
 
 -- | Evaluates an HExpr to its Expr normal form
 hexprNO :: HExpr -> Maybe (Expr Int)
-hexprNO e = evalNO <$> hexprToExpr e 1
+hexprNO e = evalNO <$> hexprToExpr e 0
 
 -- | Enumerates closed term in normal form. It basically enumerates terms in the
 -- | following grammar always picking indices in scope:
