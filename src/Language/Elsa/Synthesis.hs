@@ -6,6 +6,7 @@ import           Data.Sequence                 as Seq
 import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
 import           Language.Elsa.Eval
+import           Language.Elsa.Encodings
 
 -- | Lambda expressions with a hole. We use De Bruijn indices because it makes it
 -- | easier to keep track of the binders in scope when enumerating closed terms.
