@@ -27,7 +27,8 @@ Library
                       Language.Elsa.Eval,
                       Language.Elsa.Parser,
                       Language.Elsa.Runner,
-                      Language.Elsa.Synthesis
+                      Language.Elsa.Synthesis,
+                      Language.Elsa.Encodings
 
   Default-Extensions: OverloadedStrings
 
