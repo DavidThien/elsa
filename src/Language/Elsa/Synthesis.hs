@@ -84,6 +84,24 @@ testExamples examples expr =
   in
       foldr foldFunction True examples
 
+-- | Enumerates terms taking advantage of the fact that functions must have
+-- | a number of top-level lambdas equal to the number of variables
+-- | the function is called on (followed by an application, and then
+-- | arbitrary expressions)
+enumerateTerms :: Int -> Int -> [HExpr]
+enumerateTerms 0 _ = []
+enumerateTerms depth vars = enumerateTerms' depth vars []
+
+enumerateTerms' :: Int -> Int -> [HExpr] -> [HExpr]
+enumerateTerms' 0 _ _ = []
+enumerateTerms' depth vars indices =
+  if vars > 0
+     then map (\x -> HLam x) $ enumerateTerms' (depth - 1) (vars - 1) nextIndices
+     else [HApp e1 e2 | e1 <- nextLevelCurrIndices, e2 <- nextLevelCurrIndices]
+          ++ indices
+  where nextIndices = (HDeBruijn $ Prelude.length indices) : indices
+        nextLevelCurrIndices = bottomUp (depth - 1) indices
+
 -- | Takes a list of input/output expressions where the input expression
 -- | has the free variable 'test' where the synthesized test expressions will
 -- | be inserted, and a number of iterations to run for. The synthesizer will
