@@ -72,8 +72,10 @@ expansion maxIdx = HLam HHole : [ HApp idx HHole | idx <- deBruijnsUpTo maxIdx ]
 bottomUp 0 indices = indices
 bottomUp level indices =
   [ HLam e | e <- bottomUp (level - 1) nextIndices ]
-    ++ [ HApp e1 e2 | e1 <- Prelude.reverse indices, e2 <- bottomUp (level - 1) indices ]
-  where nextIndices = (HDeBruijn $ Prelude.length indices + 1) : indices
+    ++ [ HApp e1 e2 | e1 <- nextLevelCurrIndices, e2 <- nextLevelCurrIndices]
+    ++ indices
+  where nextIndices = (HDeBruijn $ Prelude.length indices) : indices
+        nextLevelCurrIndices = bottomUp (level - 1) indices
 
 testExamples :: [(Expr Int, Expr Int)] -> Expr Int -> Bool
 testExamples examples expr =
