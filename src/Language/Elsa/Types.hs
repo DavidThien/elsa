@@ -97,7 +97,9 @@ data Expr a
   = EVar Id                  a
   | ELam !(Bind a) !(Expr a) a
   | EApp !(Expr a) !(Expr a) a
+
 --  deriving (Show)
+
 
 instance Show (Expr a) where
   show = pprint

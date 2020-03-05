@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited, isTrnsEq,
-                           isTrnsEqFuel) where
+                           isTrnsEqFuel, newAId, isNormEq) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S

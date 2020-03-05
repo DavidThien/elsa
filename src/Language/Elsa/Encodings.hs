@@ -2,9 +2,36 @@ module Language.Elsa.Encodings where
 
 import           Language.Elsa.Types
 
-churchTrue = ELam (Bind "a" 0) (ELam (Bind "b" 0) (EVar "a" 0) 0) 0 :: Expr Int
-churchFalse = ELam (Bind "a" 0) (ELam (Bind "b" 0) (EVar "b" 0) 0) 0 :: Expr Int
+churchTrue = ELam (Bind "a" ()) (ELam (Bind "b" ()) (EVar "a" ()) ()) ()
+churchFalse = ELam (Bind "a" ()) (ELam (Bind "b" ()) (EVar "b" ()) ()) ()
 
-churchNot = ELam (Bind "p" 0) (EApp (EApp (EVar "p" 0) churchFalse 0) churchTrue 0) 0 :: Expr Int
-churchAnd = ELam (Bind "p" 0) (ELam (Bind "q" 0) (EApp (EApp (EVar "p" 0) (EVar "q" 0) 0) (EVar "p" 0) 0) 0) 0 :: Expr Int
-churchOr = ELam (Bind "p" 0) (ELam (Bind "q" 0) (EApp (EApp (EVar "p" 0) (EVar "p" 0) 0) (EVar "q" 0) 0) 0) 0 :: Expr Int
+churchNot = ELam (Bind "p" ()) (EApp (EApp (EVar "p" ()) churchFalse ()) churchTrue ()) ()
+churchAnd = ELam
+  (Bind "p" ())
+  (ELam (Bind "q" ()) (EApp (EApp (EVar "p" ()) (EVar "q" ()) ()) (EVar "p" ()) ()) ())
+  ()
+churchOr = ELam
+  (Bind "p" ())
+  (ELam (Bind "q" ()) (EApp (EApp (EVar "p" ()) (EVar "p" ()) ()) (EVar "q" ()) ()) ())
+  ()
+
+testsAnd =
+  [ (EApp (EApp (EVar "test" ()) churchTrue ()) (EVar "x" ()) () , EVar "x" ())
+  , (EApp (EApp (EVar "test" ()) churchFalse ()) (EVar "x" ()) (), churchFalse)
+  ]
+
+zero = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EVar "x" ()) ()) ()
+one = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EApp (EVar "f" ()) (EVar "x" ()) ()) ()) ()
+two = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EApp (EVar "f" ()) (EApp (EVar "f" ()) (EVar "x" ()) ()) ()) ()) ()
+
+testsNum = [
+  (EApp (EVar "test" ()) zero (), one),
+  (EApp (EVar "test" ()) one (), two)
+           ]
+
+-- testsAnd =
+--   [ (EApp (EApp (EVar "test" ()) churchTrue ()) churchTrue () , churchTrue)
+--   , (EApp (EApp (EVar "test" ()) churchFalse ()) churchFalse (), churchFalse)
+--   , (EApp (EApp (EVar "test" ()) churchTrue ()) churchFalse (), churchFalse)
+--   , (EApp (EApp (EVar "test" ()) churchFalse ()) churchTrue (), churchFalse)
+--   ]
