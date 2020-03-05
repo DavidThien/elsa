@@ -3,6 +3,7 @@
 module Language.Elsa.Parser
   ( parse
   , parseFile
+  , expr
   ) where
 
 import qualified Control.Exception          as Ex

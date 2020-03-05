@@ -1,33 +1,44 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Language.Elsa.Encodings where
 
 import           Language.Elsa.Types
+import           Text.Megaparsec hiding (parse)
+import qualified Language.Elsa.Parser          as Parser
 
-churchTrue = ELam (Bind "a" ()) (ELam (Bind "b" ()) (EVar "a" ()) ()) ()
-churchFalse = ELam (Bind "a" ()) (ELam (Bind "b" ()) (EVar "b" ()) ()) ()
+churchTrue = parse "\\a b -> a"
+churchFalse = parse "\\a b -> b"
 
-churchNot = ELam (Bind "p" ()) (EApp (EApp (EVar "p" ()) churchFalse ()) churchTrue ()) ()
-churchAnd = ELam
-  (Bind "p" ())
-  (ELam (Bind "q" ()) (EApp (EApp (EVar "p" ()) (EVar "q" ()) ()) (EVar "p" ()) ()) ())
-  ()
-churchOr = ELam
-  (Bind "p" ())
-  (ELam (Bind "q" ()) (EApp (EApp (EVar "p" ()) (EVar "p" ()) ()) (EVar "q" ()) ()) ())
-  ()
+churchNot = lam "p" (app (app (var "p") churchFalse) churchTrue)
+churchAnd = parse "\\p q -> p q p"
+churchOr = parse "\\p q -> p p q"
 
 testsAnd =
-  [ (EApp (EApp (EVar "test" ()) churchTrue ()) (EVar "x" ()) () , EVar "x" ())
-  , (EApp (EApp (EVar "test" ()) churchFalse ()) (EVar "x" ()) (), churchFalse)
+  [ (app (app (var "test") churchTrue) (var "x"), var "x")
+  , (app (app (var "test") churchFalse) (var "x"), churchFalse)
   ]
 
-zero = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EVar "x" ()) ()) ()
-one = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EApp (EVar "f" ()) (EVar "x" ()) ()) ()) ()
-two = ELam (Bind "f" ()) (ELam (Bind "x" ()) (EApp (EVar "f" ()) (EApp (EVar "f" ()) (EVar "x" ()) ()) ()) ()) ()
+zero = parse "\f x -> x"
+one = parse "\f x -> f x"
+two = parse "\f x -> f f x"
 
-testsNum = [
-  (EApp (EVar "test" ()) zero (), one),
-  (EApp (EVar "test" ()) one (), two)
-           ]
+testsNum = [(app (var "test") zero , one), (app (var "test" ) one, two)]
+
+------------------------------------------------------------------------------
+
+lam x e = ELam (Bind x ()) e ()
+app e1 e2 = EApp e1 e2 ()
+var x = EVar x ()
+
+unwrapRight :: Either a b -> b
+unwrapRight (Right b) = b
+unwrapRight _ = error "unwrapRight: Left"
+
+unitExpr :: Expr a -> Expr ()
+unitExpr (EVar x _) = EVar x ()
+unitExpr (ELam (Bind x _) e _) = ELam (Bind x ()) (unitExpr e) ()
+unitExpr (EApp e1 e2 _ ) = EApp (unitExpr e1) (unitExpr e2) ()
+
+parse t =  unitExpr $ unwrapRight $ runParser Parser.expr "FILE" t
 
 -- testsAnd =
 --   [ (EApp (EApp (EVar "test" ()) churchTrue ()) churchTrue () , churchTrue)
