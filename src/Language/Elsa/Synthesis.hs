@@ -4,15 +4,10 @@ module Language.Elsa.Synthesis where
 
 import qualified Data.HashMap.Strict           as M
 import qualified Data.Stream.Infinite          as S
-import           Language.Elsa.Encodings
 import           Language.Elsa.Enumeration
 import qualified Language.Elsa.LocallyNameless as LN
 -- import qualified Language.Elsa.Types           as N
 -- import qualified Language.Elsa.Eval            as N
-
-prependLambdas :: Int -> HExpr -> HExpr
-prependLambdas 0 expr = expr
-prependLambdas n expr = prependLambdas (n - 1) (HLam expr)
 
 ---------------------------------------------------------------------------------
 -- | Synthesis
@@ -25,16 +20,16 @@ class Synthesizable e where
   fromHExpr :: Int -> HExpr -> [e]
   checkEq :: Env e -> e -> e -> Bool
 
-  synthesize :: Env e -> Spec e -> Int -> Int -> [e]
-  synthesize env spec max vars =
-    let terms = S.take max $ S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
-    in  filter (testSpec env spec) terms
+synthesize :: Synthesizable e => Env e -> Spec e -> Int -> Int -> [e]
+synthesize env spec max vars =
+  let terms = S.take max $ S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
+  in  filter (testSpec env spec) terms
 
-  testSpec :: Env e -> Spec e -> e -> Bool
-  testSpec env spec expr = foldr folder True spec
-    where
-      env' = M.insert "test" expr env
-      folder (i, o) b = b && checkEq env' i o
+testSpec :: Synthesizable e => Env e -> Spec e -> e -> Bool
+testSpec env spec expr = foldr folder True spec
+ where
+  env' = M.insert "test" expr env
+  folder (i, o) b = b && checkEq env' i o
 
 instance Synthesizable LN.Expr where
   fromHExpr n (HLam expr) = [ LN.ELam x | x <- fromHExpr (n + 1) expr ]
@@ -53,3 +48,7 @@ instance Synthesizable LN.Expr where
 --   fromHExpr n HHole = [ N.EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
 
 --   checkEq = N.isNormEq
+
+prependLambdas :: Int -> HExpr -> HExpr
+prependLambdas 0 expr = expr
+prependLambdas n expr = prependLambdas (n - 1) (HLam expr)
