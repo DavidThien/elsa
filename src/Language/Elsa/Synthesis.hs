@@ -7,6 +7,7 @@ import           Text.Printf                    ( printf )
 import           Language.Elsa.Types
 import           Language.Elsa.Eval
 import           Language.Elsa.Encodings
+import qualified Language.Elsa.LocallyNameless as LN
 
 ---------------------------------------------------------------------------------
 -- | Top-down enumeration
@@ -116,11 +117,11 @@ aexprToExpr n (AApp expr1 expr2) =
   [ EApp x1 x2 () | x1 <- aexprToExpr n expr1, x2 <- aexprToExpr n expr2 ]
 aexprToExpr n AHole = [ EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
 
-aexprToDBExpr :: Int -> AExpr -> [DBExpr]
-aexprToDBExpr n (ALam expr) = [ DBLam x | x <- aexprToDBExpr (n + 1) expr ]
-aexprToDBExpr n (AApp expr1 expr2) =
-  [ DBApp x1 x2 | x1 <- aexprToDBExpr n expr1, x2 <- aexprToDBExpr n expr2 ]
-aexprToDBExpr n AHole = [ DBVar x | x <- [0 .. n - 1] ]
+aexprToLNExpr :: Int -> AExpr -> [LN.Expr]
+aexprToLNExpr n (ALam expr) = [ LN.ELam x | x <- aexprToLNExpr (n + 1) expr ]
+aexprToLNExpr n (AApp expr1 expr2) =
+  [ LN.EApp x1 x2 | x1 <- aexprToLNExpr n expr1, x2 <- aexprToLNExpr n expr2 ]
+aexprToLNExpr n AHole = [ LN.EBVar x | x <- [0 .. n - 1] ]
 
 prependLambdas 0 expr = expr
 prependLambdas n expr = prependLambdas (n - 1) (ALam expr)

@@ -4,7 +4,7 @@
 module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited, isTrnsEq,
                            isTrnsEqFuel, newAId, isNormEq, isNormEqLimited,
                            isNormEqRunsOutOfFuel, evalCBN, bSubst, alphaNormal,
-                           canon, DBExpr(..), evalDeBruijn, evalDeBruijnNO, dbSubst) where
+                           canon) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S
@@ -48,7 +48,6 @@ expand g (Defn b e) = case zs of
 --------------------------------------------------------------------------------
 type CheckM a b = Either (Result a) b
 type Env a      = M.HashMap Id (Expr a)
-type DBEnv      = M.HashMap String DBExpr
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -231,9 +230,6 @@ isNormEq g e1 e2 = isEquiv g e1' e2
   where
     e1'          = traceShow ("evalNO" ++ show e1) $ evalNO (traceShow "CANON" $ canon g e1)
 
-isDBNormEq :: DBEnv -> DBExpr -> DBExpr -> Bool
-isDBNormEq g e1 e2 = evalDeBruijnNO (dbSubstName e1 g) == dbSubstName e2 g
-
 isNormEqLimited :: Env a -> Expr a -> Expr a -> Int -> Bool
 isNormEqLimited g e1 e2 fuel =
   case e1' of
@@ -275,43 +271,6 @@ evalNOLimited (EApp e1 e2 l) i = if i > 0
                              else
                                Nothing
 
-data DBExpr
-  = DBLam DBExpr
-  | DBApp DBExpr DBExpr
-  | DBVar Int
-  | DBName String
-  deriving Eq
-
-instance Show DBExpr where
-  show (DBVar idx) = show idx
-  show (DBApp e1 e2   ) = printf "(%s %s)" (show e1) (show e2)
-  show (DBLam e       ) = printf "(λ.%s)" (show e)
-  show (DBName s      ) = s
-
-liftDB :: DBExpr -> Int -> Int -> DBExpr
-liftDB (DBLam e1) k level = DBLam $ liftDB e1 k (level + 1)
-liftDB (DBApp e1 e2) k level = DBApp (liftDB e1 k level) (liftDB e2 k level)
-liftDB (DBVar i) k level = if i < level then (DBVar i) else (DBVar $ i + k)
-liftDB e@(DBName _) _ _= e
-
--- | Substitute for one application (replace top-level binding)
-dbSubst :: DBExpr -> DBExpr -> Int -> DBExpr
-dbSubst (DBLam e1) e2 k = DBLam $ dbSubst e1 e2 (k + 1)
-dbSubst (DBApp e1 e2) e3 k = DBApp (dbSubst e1 e3 k) (dbSubst e2 e3 k)
-dbSubst (DBVar i) e k = if
-                        | i == k -> (liftDB e i 0)
-                        | i > k -> (DBVar (i - 1))
-                        | otherwise -> (DBVar i)
-dbSubst e@(DBName _) _ _= e
-
-evalDeBruijnNO :: DBExpr -> DBExpr
-evalDeBruijnNO e@(DBVar {}) = e
-evalDeBruijnNO (DBLam e) = DBLam $ evalDeBruijnNO e
-evalDeBruijnNO (DBApp e1 e2) = case evalDeBruijn e1 of
-                          DBLam e1' -> evalDeBruijnNO (dbSubst e1' e2 0)
-                          e1'       -> DBApp (evalDeBruijnNO e1') (evalDeBruijnNO e2)
-evalDeBurijnNO e@(DBName _) = e
-
 -- | normal-order reduction
 evalNO :: Expr a -> Expr a
 evalNO e@(EVar {})    = e
@@ -332,14 +291,6 @@ evalCBNLimited (EApp e1 e2 l) i = if i > 0
                                 Just e1'            -> Just (EApp e1' e2 l)
                                 Nothing -> Nothing
                               else Nothing
-
-evalDeBruijn :: DBExpr -> DBExpr
-evalDeBruijn e@(DBVar {}) = e
-evalDeBruijn e@(DBLam {}) = e
-evalDeBruijn (DBApp e1 e2) = case evalDeBruijn e1 of
-                          DBLam e1' -> evalDeBruijn (dbSubst e1' e2 0)
-                          e1'          -> DBApp e1' e2
-evalDeBruijn e@(DBName _) = e
 
 -- | call-by-name reduction
 evalCBN :: Expr a -> Expr a
@@ -401,12 +352,6 @@ subst (EApp e1 e2 z) su = EApp (subst e1 su) (subst e2 su) z
 subst (ELam b e z)   su = ELam b (subst e su') z
   where
     su'                 = M.delete (bindId b) su
-
-dbSubstName :: DBExpr -> DBEnv -> DBExpr
-dbSubstName e@(DBVar _)   su = e
-dbSubstName (DBApp e1 e2) su = DBApp (dbSubstName e1 su) (dbSubstName e2 su)
-dbSubstName (DBLam e)     su = DBLam (dbSubstName e su)
-dbSubstName e@(DBName s)  su = M.lookupDefault e s su
 
 canon :: Env a -> Expr a -> Expr  a
 canon g = alphaNormal . (`subst` g)
