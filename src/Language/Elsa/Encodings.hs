@@ -18,7 +18,7 @@ testsAnd = [(app2 "test" churchTrue "x", "x"), (app2 "test" churchFalse "x", chu
 
 zero = parse "\\f x -> x"
 one = parse "\\f x -> f x"
-two = parse "\\f x -> f f x"
+two = parse "\\f x -> f (f x)"
 add1 = parse "\\n f x -> f (n f x)"
 plus = parse "\\m n f x -> m f (n f x)"
 
