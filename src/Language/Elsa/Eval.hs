@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf#-}
 
 module Language.Elsa.Eval (elsa, elsaOn, evalNO, evalNOLimited, isTrnsEq,
-                           isTrnsEqFuel, newAId, isNormEq) where
+                           isTrnsEqFuel, newAId, isNormEq, isNormEqLimited,
+                           isNormEqRunsOutOfFuel, evalCBN, bSubst, alphaNormal,
+                           canon, DBExpr, evalDeBruijn, evalDeBruijnNO, dbSubst) where
 
 import qualified Data.HashMap.Strict  as M
 import qualified Data.HashSet         as S
@@ -10,6 +13,7 @@ import           Control.Monad.State
 import qualified Data.Maybe           as Mb -- (isJust, maybeToList)
 import           Language.Elsa.Types
 import           Language.Elsa.Utils  (traceShow, qPushes, qInit, qPop, fromEither)
+import           Text.Printf                    ( printf )
 
 --------------------------------------------------------------------------------
 elsa :: Elsa a -> [Result a]
@@ -226,6 +230,22 @@ isNormEq g e1 e2 = isEquiv g e1' e2
   where
     e1'          = traceShow ("evalNO" ++ show e1) $ evalNO (traceShow "CANON" $ canon g e1)
 
+isNormEqLimited :: Env a -> Expr a -> Expr a -> Int -> Bool
+isNormEqLimited g e1 e2 fuel =
+  case e1' of
+    Just e1' -> isEquiv g e1' e2
+    Nothing  -> False
+  where
+    e1'          = traceShow ("evalNO" ++ show e1) $ evalNOLimited (traceShow "CANON" $ canon g e1) fuel
+
+isNormEqRunsOutOfFuel :: Env a -> Expr a -> Expr a -> Int -> Bool
+isNormEqRunsOutOfFuel g e1 e2 fuel =
+  case e1' of
+    Just e1' -> False
+    Nothing  -> True
+  where
+    e1'          = traceShow ("evalNO" ++ show e1) $ evalNOLimited (traceShow "CANON" $ canon g e1) fuel
+
 evalNOLimited :: Expr a -> Int -> Maybe (Expr a)
 evalNOLimited e@(EVar {})    _ = Just e
 evalNOLimited (ELam b e l)   i = if i > 0
@@ -238,7 +258,7 @@ evalNOLimited (EApp e1 e2 l) i = if i > 0
                              then case evalCBNLimited e1 (i - 1) of
                                Just (ELam b e1' _) ->
                                  case (bSubstLimited e1' (bindId b) e2 (i - 1)) of
-                                   Just e1'' -> evalNOLimited e1'' (i - 1)
+                                   Just e1'' -> evalNOLimited (alphaNormal e1'') (i - 1)
                                    Nothing -> Nothing
                                Just e1'            ->
                                  case (evalNOLimited e1' (i - 1)) of
@@ -251,12 +271,44 @@ evalNOLimited (EApp e1 e2 l) i = if i > 0
                              else
                                Nothing
 
+data DBExpr
+  = DBLam DBExpr
+  | DBApp DBExpr DBExpr
+  | DBVar Int
+  deriving Eq
+
+instance Show DBExpr where
+  show (DBVar idx) = show idx
+  show (DBApp e1 e2   ) = printf "(%s %s)" (show e1) (show e2)
+  show (DBLam e       ) = printf "(λ.%s)" (show e)
+
+liftDB :: DBExpr -> Int -> Int -> DBExpr
+liftDB (DBLam e1) k level = DBLam $ liftDB e1 k (level + 1)
+liftDB (DBApp e1 e2) k level = DBApp (liftDB e1 k level) (liftDB e2 k level)
+liftDB (DBVar i) k level = if i < level then (DBVar i) else (DBVar $ i + k)
+
+-- | Substitute for one application (replace top-level binding)
+dbSubst :: DBExpr -> DBExpr -> Int -> DBExpr
+dbSubst (DBLam e1) e2 k = DBLam $ dbSubst e1 e2 (k + 1)
+dbSubst (DBApp e1 e2) e3 k = DBApp (dbSubst e1 e3 k) (dbSubst e2 e3 k)
+dbSubst (DBVar i) e k = if
+                        | i == k -> (liftDB e i 0)
+                        | i > k -> (DBVar (i - 1))
+                        | otherwise -> (DBVar i)
+
+evalDeBruijnNO :: DBExpr -> DBExpr
+evalDeBruijnNO e@(DBVar {}) = e
+evalDeBruijnNO (DBLam e) = DBLam $ evalDeBruijnNO e
+evalDeBruijnNO (DBApp e1 e2) = case evalDeBruijn e1 of
+                          DBLam e1' -> evalDeBruijnNO (dbSubst e1' e2 0)
+                          e1'       -> DBApp (evalDeBruijnNO e1') (evalDeBruijnNO e2)
+
 -- | normal-order reduction
 evalNO :: Expr a -> Expr a
 evalNO e@(EVar {})    = e
 evalNO (ELam b e l)   = ELam b (evalNO e) l
 evalNO (EApp e1 e2 l) = case evalCBN e1 of
-                          ELam b e1' _ -> evalNO (bSubst e1' (bindId b) e2)
+                          ELam b e1' _ -> evalNO (alphaNormal (bSubst e1' (bindId b) e2))
                           e1'          -> EApp (evalNO e1') (evalNO e2) l
 
 evalCBNLimited :: Expr a -> Int -> Maybe (Expr a)
@@ -266,18 +318,25 @@ evalCBNLimited (EApp e1 e2 l) i = if i > 0
                               then case evalCBNLimited e1 (i - 1) of
                                 Just (ELam b e1' _) ->
                                   case (bSubstLimited e1' (bindId b) e2 (i - 1)) of
-                                    Just e1'' -> evalCBNLimited e1'' (i - 1)
+                                    Just e1'' -> evalCBNLimited (alphaNormal e1'') (i - 1)
                                     Nothing -> Nothing
                                 Just e1'            -> Just (EApp e1' e2 l)
                                 Nothing -> Nothing
                               else Nothing
+
+evalDeBruijn :: DBExpr -> DBExpr
+evalDeBruijn e@(DBVar {}) = e
+evalDeBruijn e@(DBLam {}) = e
+evalDeBruijn (DBApp e1 e2) = case evalDeBruijn e1 of
+                          DBLam e1' -> evalDeBruijn (dbSubst e1' e2 0)
+                          e1'          -> DBApp e1' e2
 
 -- | call-by-name reduction
 evalCBN :: Expr a -> Expr a
 evalCBN e@(EVar {}) = e
 evalCBN e@(ELam {}) = e
 evalCBN (EApp e1 e2 l) = case evalCBN e1 of
-                          ELam b e1' _ -> evalCBN (bSubst e1' (bindId b) e2)
+                          ELam b e1' _ -> evalCBN (alphaNormal (bSubst e1' (bindId b) e2))
                           e1'          -> EApp e1' e2 l
 
 bSubstLimited :: Expr a -> Id -> Expr a -> Int -> Maybe (Expr a)

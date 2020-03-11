@@ -130,11 +130,22 @@ prependLambdas n expr = prependLambdas (n - 1) (ALam expr)
 -- TODO: infer the number of variables for a generated function
 synthesizeEncoding :: [(Expr (), Expr ())] -> Int -> Int -> [Expr ()]
 synthesizeEncoding examples max vars =
-  let terms = S.take max $ S.concat $ fmap (aexprToExpr 0 . prependLambdas vars) exprStream
+  let terms = S.take max $ fmap alphaNormal $ S.concat $ fmap (aexprToExpr 0 . prependLambdas vars) exprStream
   in  filter (testExamples examples) terms
+
+synthesisTestOutOfFuel :: [(Expr (), Expr ())] -> Int -> Int -> [Expr ()]
+synthesisTestOutOfFuel examples max vars =
+  let terms = S.take max $ fmap alphaNormal $ S.concat $ fmap (aexprToExpr 0 . prependLambdas vars) exprStream
+  in  filter (collectLongExamples examples) terms
 
 testExamples :: [(Expr (), Expr ())] -> Expr () -> Bool
 testExamples examples expr =
   let env = M.singleton "test" expr
       foldFunction (i, o) b = b && isNormEq env i o
   in  foldr foldFunction True examples
+
+collectLongExamples :: [(Expr (), Expr ())] -> Expr () -> Bool
+collectLongExamples examples expr =
+  let env = M.singleton "test" expr
+      foldFunction (i, o) b = b || isNormEqRunsOutOfFuel env (alphaNormal i) (alphaNormal o) 20
+  in  foldr foldFunction False examples
