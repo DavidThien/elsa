@@ -39,6 +39,8 @@ hexprToExpr (HApp expr1 expr2) n = case hexprToExpr expr1 n of
 hexprToExpr (HDeBruijn i) n = Just $ EVar (show $ (n - i) - 1) 0
 hexprToExpr HHole         _ = Nothing
 
+
+
 -- | Evaluates an HExpr to its Expr normal form
 hexprNO :: HExpr -> Maybe (Expr Int)
 hexprNO e = evalNO <$> hexprToExpr e 0
@@ -113,6 +115,12 @@ aexprToExpr n (ALam expr) = [ ELam (Bind ("x" ++ show n) ()) x () | x <- aexprTo
 aexprToExpr n (AApp expr1 expr2) =
   [ EApp x1 x2 () | x1 <- aexprToExpr n expr1, x2 <- aexprToExpr n expr2 ]
 aexprToExpr n AHole = [ EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
+
+aexprToDBExpr :: Int -> AExpr -> [DBExpr]
+aexprToDBExpr n (ALam expr) = [ DBLam x | x <- aexprToDBExpr (n + 1) expr ]
+aexprToDBExpr n (AApp expr1 expr2) =
+  [ DBApp x1 x2 | x1 <- aexprToDBExpr n expr1, x2 <- aexprToDBExpr n expr2 ]
+aexprToDBExpr n AHole = [ DBVar x | x <- [0 .. n - 1] ]
 
 prependLambdas 0 expr = expr
 prependLambdas n expr = prependLambdas (n - 1) (ALam expr)
