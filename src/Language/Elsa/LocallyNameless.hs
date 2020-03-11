@@ -2,6 +2,7 @@
 
 module Language.Elsa.LocallyNameless
   ( isNormEq
+  , Env
   , Expr(..)
   , parse
   )
@@ -14,10 +15,6 @@ import qualified Text.Megaparsec.Char.Lexer    as L
 import           Text.Megaparsec.Char
 import qualified Data.List                     as L
 import           Control.Monad                  ( void )
-
-
-
-type Parser = Parsec () String
 
 --------------------------------------------------------------------------------
 -- | Grammar
@@ -89,6 +86,7 @@ subst (  ELam e    ) su = ELam (subst e su)
 --------------------------------------------------------------------------------
 -- | Parsing
 --------------------------------------------------------------------------------
+type Parser = Parsec () String
 
 parse = runParser (whole expr) ""
 

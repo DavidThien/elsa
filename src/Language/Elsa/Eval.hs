@@ -13,7 +13,6 @@ import           Control.Monad.State
 import qualified Data.Maybe           as Mb -- (isJust, maybeToList)
 import           Language.Elsa.Types
 import           Language.Elsa.Utils  (traceShow, qPushes, qInit, qPop, fromEither)
-import           Text.Printf                    ( printf )
 
 --------------------------------------------------------------------------------
 elsa :: Elsa a -> [Result a]
