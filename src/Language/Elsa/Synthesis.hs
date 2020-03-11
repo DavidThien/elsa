@@ -37,6 +37,7 @@ instance Synthesizable LN.Expr where
     [ LN.EApp x1 x2 | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
   fromHExpr n HHole = [ LN.EBVar x | x <- [0 .. n - 1] ]
 
+  -- checkEq env e1 e2 = LN.isNormEqUpTo 10 env e1 e2 == LN.NormEqTrue
   checkEq = LN.isNormEq
 
 -- This is not working because N.isNormEq doesn't do alpha renaming while evaluating

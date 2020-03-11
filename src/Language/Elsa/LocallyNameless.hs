@@ -2,9 +2,11 @@
 
 module Language.Elsa.LocallyNameless
   ( isNormEq
+  , isNormEqUpTo
+  , parse
   , Env
   , Expr(..)
-  , parse
+  , NormEq(..)
   )
 where
 
@@ -38,9 +40,15 @@ type Env = M.HashMap String Expr
 --------------------------------------------------------------------------------
 -- | Evaluation
 --------------------------------------------------------------------------------
+data NormEq = NormEqTrue | NormEqFalse | NormEqUnknown deriving Eq
 
 isNormEq :: Env -> Expr -> Expr -> Bool
 isNormEq g e1 e2 = evalNO (subst e1 g) == subst e2 g
+
+isNormEqUpTo :: Int -> Env -> Expr -> Expr -> NormEq
+isNormEqUpTo steps g e1 e2 = case evalNOUpTo steps (subst e1 g) of
+  Just e1' -> if e1' == subst e2 g then NormEqTrue else NormEqFalse
+  Nothing  -> NormEqUnknown
 
 evalCBN :: Expr -> Expr
 evalCBN e@EFVar{}    = e
@@ -57,6 +65,26 @@ evalNO (ELam e    ) = ELam $ evalNO e
 evalNO (EApp e1 e2) = case evalCBN e1 of
   ELam e1' -> evalNO (open e1' e2 0)
   e1'      -> EApp (evalNO e1') (evalNO e2)
+
+evalCBNUpTo :: Int -> Expr -> Maybe Expr
+evalCBNUpTo 0     _            = Nothing
+evalCBNUpTo _     e@EFVar{}    = Just e
+evalCBNUpTo _     e@EBVar{}    = Just e
+evalCBNUpTo _     e@ELam{}     = Just e
+evalCBNUpTo steps (EApp e1 e2) = case evalCBNUpTo steps e1 of
+  Just (ELam e1') -> evalCBNUpTo (steps - 1) (open e1' e2 0)
+  Just e1'        -> Just $ EApp e1' e2
+  Nothing         -> Nothing
+
+evalNOUpTo :: Int -> Expr -> Maybe Expr
+evalNOUpTo 0     _            = Nothing
+evalNOUpTo _     e@EBVar{}    = Just e
+evalNOUpTo _     e@EFVar{}    = Just e
+evalNOUpTo _     (ELam e    ) = Just $ ELam $ evalNO e
+evalNOUpTo steps (EApp e1 e2) = case evalCBNUpTo steps e1 of
+  Just (ELam e1') -> evalNOUpTo (steps - 1) (open e1' e2 0)
+  Just e1'        -> EApp <$> evalNOUpTo steps e1' <*> evalNOUpTo steps e2
+  Nothing         -> Nothing
 
 --------------------------------------------------------------------------------
 -- | Substitution
