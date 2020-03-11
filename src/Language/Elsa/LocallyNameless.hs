@@ -1,9 +1,23 @@
 {-# Language MultiWayIf #-}
 
-module Language.Elsa.LocallyNameless where
+module Language.Elsa.LocallyNameless
+  ( isNormEq
+  , Expr(..)
+  , parse
+  )
+where
 
 import qualified Data.HashMap.Strict           as M
 import           Text.Printf                    ( printf )
+import           Text.Megaparsec         hiding ( parse )
+import qualified Text.Megaparsec.Char.Lexer    as L
+import           Text.Megaparsec.Char
+import qualified Data.List                     as L
+import           Control.Monad                  ( void )
+
+
+
+type Parser = Parsec () String
 
 --------------------------------------------------------------------------------
 -- | Grammar
@@ -71,3 +85,56 @@ subst e@EBVar{}      _  = e
 subst e@(EFVar s   ) su = M.lookupDefault e s su
 subst (  EApp e1 e2) su = EApp (subst e1 su) (subst e2 su)
 subst (  ELam e    ) su = ELam (subst e su)
+
+--------------------------------------------------------------------------------
+-- | Parsing
+--------------------------------------------------------------------------------
+
+parse = runParser (whole expr) ""
+
+whole :: Parser a -> Parser a
+whole p = sc *> p <* eof
+
+expr :: Parser Expr
+expr = try lamExpr <|> try appExpr <|> try bVar <|> try fVar <|> parenExpr
+
+lamExpr :: Parser Expr
+lamExpr = do
+  lam <* dot
+  ELam <$> expr
+
+bVar :: Parser Expr
+bVar = EBVar <$> L.decimal
+
+fVar :: Parser Expr
+fVar = EFVar <$> identifier
+
+appExpr :: Parser Expr
+appExpr = L.foldl' EApp <$> funExpr <* sc <*> sepBy1 funExpr sc
+
+funExpr :: Parser Expr
+funExpr = try fVar <|> try bVar <|> parenExpr
+
+parenExpr :: Parser Expr
+parenExpr = parens expr
+
+sc :: Parser ()
+sc = L.space (void spaceChar) empty empty
+
+symbol :: String -> Parser String
+symbol = L.symbol sc
+
+lam :: Parser String
+lam = symbol "\\" <|> symbol "λ"
+
+dot :: Parser String
+dot = symbol "."
+
+identChar :: Parser Char
+identChar = alphaNumChar <|> oneOf ['_', '#', '\'']
+
+identifier :: Parser String
+identifier = (:) <$> letterChar <*> many identChar
+
+parens :: Parser a -> Parser a
+parens = between (symbol "(") (symbol ")")
