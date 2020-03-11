@@ -38,10 +38,18 @@ numerals = M.fromList
   ]
 
 succSpec :: [(LN.Expr, LN.Expr)]
-succSpec = [("test zero", "one"), ("test one", "two")]
+succSpec = [("test zero", "one"), ("test one", "two"), ("test two", "three")]
+
+plusSpec :: [(LN.Expr, LN.Expr)]
+plusSpec =
+  [ ("test zero one", "one")
+  , ("test one zero", "one")
+  , ("test one two" , "three")
+  , ("test two one" , "three")
+  ]
 
 instance IsString LN.Expr where
-  fromString = unwrapRight. LN.parse
+  fromString = unwrapRight . LN.parse
 
 unwrapRight :: Either a b -> b
 unwrapRight (Right b) = b

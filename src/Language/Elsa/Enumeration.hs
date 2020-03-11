@@ -42,6 +42,7 @@ grow exprs_2 exprs_1 = Exprs nextLambdas nextApps
       ++ [ HApp e1 e2 | e1 <- appExprs exprs_1, e2 <- allExprs exprs_1 ]
       ++ [ HApp e1 e2 | e1 <- appExprs exprs_1, e2 <- allExprs exprs_2 ]
 
+bottomUpStream :: S.Stream HExpr
 bottomUpStream = S.prepend [HHole] $ S.concat $ S.unfold unfolder init
  where
   init = (Exprs [] [], Exprs [] [HHole])

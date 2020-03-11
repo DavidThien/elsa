@@ -2,7 +2,10 @@
 
 module Language.Elsa.LocallyNameless
   ( isNormEq
-  , isNormEqUpTo
+  , isNormEqLimit
+  , evalNO
+  , evalNOLimit
+  , evalCBNLimit
   , parse
   , Env
   , Expr(..)
@@ -40,15 +43,15 @@ type Env = M.HashMap String Expr
 --------------------------------------------------------------------------------
 -- | Evaluation
 --------------------------------------------------------------------------------
-data NormEq = NormEqTrue | NormEqFalse | NormEqUnknown deriving Eq
+data NormEq = IsNormEq | IsNotNormEq | NormEqUnk deriving Eq
 
 isNormEq :: Env -> Expr -> Expr -> Bool
 isNormEq g e1 e2 = evalNO (subst e1 g) == subst e2 g
 
-isNormEqUpTo :: Int -> Env -> Expr -> Expr -> NormEq
-isNormEqUpTo steps g e1 e2 = case evalNOUpTo steps (subst e1 g) of
-  Just e1' -> if e1' == subst e2 g then NormEqTrue else NormEqFalse
-  Nothing  -> NormEqUnknown
+isNormEqLimit :: Int -> Env -> Expr -> Expr -> NormEq
+isNormEqLimit n g e1 e2 = case evalNOLimit n (subst e1 g) of
+  Just (e1', _) -> if e1' == subst e2 g then IsNormEq else IsNotNormEq
+  Nothing       -> NormEqUnk
 
 evalCBN :: Expr -> Expr
 evalCBN e@EFVar{}    = e
@@ -66,25 +69,38 @@ evalNO (EApp e1 e2) = case evalCBN e1 of
   ELam e1' -> evalNO (open e1' e2 0)
   e1'      -> EApp (evalNO e1') (evalNO e2)
 
-evalCBNUpTo :: Int -> Expr -> Maybe Expr
-evalCBNUpTo 0     _            = Nothing
-evalCBNUpTo _     e@EFVar{}    = Just e
-evalCBNUpTo _     e@EBVar{}    = Just e
-evalCBNUpTo _     e@ELam{}     = Just e
-evalCBNUpTo steps (EApp e1 e2) = case evalCBNUpTo steps e1 of
-  Just (ELam e1') -> evalCBNUpTo (steps - 1) (open e1' e2 0)
-  Just e1'        -> Just $ EApp e1' e2
-  Nothing         -> Nothing
+-- | Tries to evaluate (by call-by-name) an expression taking at most `n`
+-- | beta reductions.
+evalCBNLimit :: Int -> Expr -> Maybe (Expr, Int)
+evalCBNLimit n _ | n < 0    = Nothing
+evalCBNLimit n e@EFVar{}    = Just (e, n)
+evalCBNLimit n e@EBVar{}    = Just (e, n)
+evalCBNLimit n e@ELam{}     = Just (e, n)
+evalCBNLimit n (EApp e1 e2) = case evalCBNLimit n e1 of
+  Just (ELam e1, n) -> do
+    (e, n) <- evalCBNLimit (n - 1) (open e1 e2 0)
+    return (e, n)
+  Just (e1, n) -> Just (EApp e1 e2, n)
+  Nothing      -> Nothing
 
-evalNOUpTo :: Int -> Expr -> Maybe Expr
-evalNOUpTo 0     _            = Nothing
-evalNOUpTo _     e@EBVar{}    = Just e
-evalNOUpTo _     e@EFVar{}    = Just e
-evalNOUpTo _     (ELam e    ) = Just $ ELam $ evalNO e
-evalNOUpTo steps (EApp e1 e2) = case evalCBNUpTo steps e1 of
-  Just (ELam e1') -> evalNOUpTo (steps - 1) (open e1' e2 0)
-  Just e1'        -> EApp <$> evalNOUpTo steps e1' <*> evalNOUpTo steps e2
-  Nothing         -> Nothing
+-- | Tries to evaluate an expression to normal form taking at most `n`
+-- | beta reductions.
+evalNOLimit :: Int -> Expr -> Maybe (Expr, Int)
+evalNOLimit n _ | n < 0 = Nothing
+evalNOLimit n e@EBVar{} = Just (e, n)
+evalNOLimit n e@EFVar{} = Just (e, n)
+evalNOLimit n (ELam e)  = do
+  (e', n) <- evalNOLimit n e
+  return (ELam e', n)
+evalNOLimit n (EApp e1 e2) = case evalCBNLimit n e1 of
+  Just (ELam e1, n) -> do
+    (e, n) <- evalNOLimit (n - 1) (open e1 e2 0)
+    return (e, n)
+  Just (e1, n) -> do
+    (e1, n) <- evalNOLimit n e1
+    (e2, n) <- evalNOLimit n e2
+    return (EApp e1 e2, n)
+  Nothing -> Nothing
 
 --------------------------------------------------------------------------------
 -- | Substitution

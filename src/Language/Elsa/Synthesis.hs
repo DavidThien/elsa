@@ -6,8 +6,8 @@ import qualified Data.HashMap.Strict           as M
 import qualified Data.Stream.Infinite          as S
 import           Language.Elsa.Enumeration
 import qualified Language.Elsa.LocallyNameless as LN
--- import qualified Language.Elsa.Types           as N
--- import qualified Language.Elsa.Eval            as N
+import qualified Language.Elsa.Types           as N
+import qualified Language.Elsa.Eval            as N
 
 ---------------------------------------------------------------------------------
 -- | Synthesis
@@ -20,10 +20,12 @@ class Synthesizable e where
   fromHExpr :: Int -> HExpr -> [e]
   checkEq :: Env e -> e -> e -> Bool
 
+exprStream :: Synthesizable e => Int -> S.Stream e
+exprStream vars = S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
+
 synthesize :: Synthesizable e => Env e -> Spec e -> Int -> Int -> [e]
-synthesize env spec max vars =
-  let terms = S.take max $ S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
-  in  filter (testSpec env spec) terms
+synthesize env spec max vars = filter (testSpec env spec) exprs
+  where exprs = S.take max (exprStream vars)
 
 testSpec :: Synthesizable e => Env e -> Spec e -> e -> Bool
 testSpec env spec expr = foldr folder True spec
@@ -37,18 +39,18 @@ instance Synthesizable LN.Expr where
     [ LN.EApp x1 x2 | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
   fromHExpr n HHole = [ LN.EBVar x | x <- [0 .. n - 1] ]
 
-  -- checkEq env e1 e2 = LN.isNormEqUpTo 10 env e1 e2 == LN.NormEqTrue
-  checkEq = LN.isNormEq
+  -- checkEq = LN.isNormEq
+  checkEq env e1 e2 = LN.isNormEqLimit 10 env e1 e2 == LN.IsNormEq
 
--- This is not working because N.isNormEq doesn't do alpha renaming while evaluating
--- instance Synthesizable (N.Expr ()) where
---   fromHExpr n (HLam expr) =
---     [ N.ELam (N.Bind ("x" ++ show n) ()) x () | x <- fromHExpr (n + 1) expr ]
---   fromHExpr n (HApp expr1 expr2) =
---     [ N.EApp x1 x2 () | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
---   fromHExpr n HHole = [ N.EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
+-- This is not working because N.isNormEq doesn't do alpha renaming while reducing
+instance Synthesizable (N.Expr ()) where
+  fromHExpr n (HLam expr) =
+    [ N.ELam (N.Bind ("x" ++ show n) ()) x () | x <- fromHExpr (n + 1) expr ]
+  fromHExpr n (HApp expr1 expr2) =
+    [ N.EApp x1 x2 () | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
+  fromHExpr n HHole = [ N.EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
 
---   checkEq = N.isNormEq
+  checkEq = N.isNormEq
 
 prependLambdas :: Int -> HExpr -> HExpr
 prependLambdas 0 expr = expr
