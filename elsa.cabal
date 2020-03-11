@@ -29,7 +29,8 @@ Library
                       Language.Elsa.Runner,
                       Language.Elsa.Synthesis,
                       Language.Elsa.Encodings,
-                      Language.Elsa.LocallyNameless
+                      Language.Elsa.LocallyNameless,
+                      Language.Elsa.Enumeration
 
   Default-Extensions: OverloadedStrings
 
