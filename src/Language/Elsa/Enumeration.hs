@@ -1,12 +1,9 @@
-module Language.Elsa.Enumeration
-  ( bottomUpStream
-  , HExpr(..)
-  )
-where
+module Language.Elsa.Enumeration where
 
 -- import qualified Data.Sequence                 as Seq
 import qualified Data.Stream.Infinite          as S
 import           Text.Printf                    ( printf )
+import           Control.Monad.Logic
 
 -- | Expressions with a hole. They don't have variables because we first enumerate
 -- | expressions with holes instead of variables and then we fill in the holes with
@@ -18,9 +15,9 @@ data HExpr
   deriving Eq
 
 instance Show HExpr where
-  show (HApp e1 e2   ) = printf "(%s %s)" (show e1) (show e2)
-  show (HLam e       ) = printf "(λ.%s)" (show e)
-  show HHole           = "□"
+  show (HApp e1 e2) = printf "(%s %s)" (show e1) (show e2)
+  show (HLam e    ) = printf "(λ.%s)" (show e)
+  show HHole        = "□"
 
 data Exprs = Exprs { lambdaExprs :: [HExpr], appExprs :: [HExpr] }
 
@@ -48,6 +45,7 @@ bottomUpStream = S.prepend [HHole] $ S.concat $ S.unfold unfolder init
   init = (Exprs [] [], Exprs [] [HHole])
   unfolder (exprs_2, exprs_1) =
     let exprs = grow exprs_2 exprs_1 in (allExprs exprs, (exprs_2 ++. exprs_1, exprs))
+
 
 -- ---------------------------------------------------------------------------------
 -- -- | Top-down enumeration

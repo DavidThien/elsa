@@ -5,7 +5,7 @@ module Language.Elsa.Encodings where
 import           GHC.Exts                       ( IsString(..) )
 import qualified Language.Elsa.LocallyNameless as LN
 import qualified Data.HashMap.Strict           as M
-
+import           Language.Elsa.Synthesis        ( Spec(..) )
 
 ---------------------------------------------------------------------------------
 -- | Booleans
@@ -20,8 +20,16 @@ booleans = M.fromList
   , ("or"   , "λ.λ.1 1 0")
   ]
 
-andSpec :: [(LN.Expr, LN.Expr)]
-andSpec = [("test true x", "x"), ("test false x", "false")]
+andSpec :: Spec LN.Expr
+-- andSpec = Spec [("?and true x", "x"), ("?and false x", "false")] "?and" 2
+andSpec = Spec
+  "?and"
+  2
+  [ ("?and true true"  , "true")
+  , ("?and true false" , "false")
+  , ("?and false true" , "false")
+  , ("?and false false", "false")
+  ]
 
 ---------------------------------------------------------------------------------
 -- | Numerals
@@ -37,15 +45,17 @@ numerals = M.fromList
   , ("plus" , "λ.λ.λ.λ.3 1 (2 1 0)")
   ]
 
-succSpec :: [(LN.Expr, LN.Expr)]
-succSpec = [("test zero", "one"), ("test one", "two"), ("test two", "three")]
+succSpec :: Spec LN.Expr
+succSpec = Spec "?succ" 1 [("?succ zero", "one"), ("?succ one", "two"), ("?succ two", "three")]
 
-plusSpec :: [(LN.Expr, LN.Expr)]
-plusSpec =
-  [ ("test zero one", "one")
-  , ("test one zero", "one")
-  , ("test one two" , "three")
-  , ("test two one" , "three")
+plusSpec :: Spec LN.Expr
+plusSpec = Spec
+  "?plus"
+  2
+  [ ("?plus zero one", "one")
+  , ("?plus one zero", "one")
+  , ("?plus one two" , "three")
+  , ("?plus two one" , "three")
   ]
 
 instance IsString LN.Expr where

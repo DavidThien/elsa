@@ -6,3 +6,4 @@ packages:
 extra-deps:
 - dequeue-0.1.12
 - streams-3.3
+- logict-0.7.0.2

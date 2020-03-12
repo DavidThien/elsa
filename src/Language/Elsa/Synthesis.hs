@@ -9,11 +9,12 @@ import qualified Language.Elsa.LocallyNameless as LN
 import qualified Language.Elsa.Types           as N
 import qualified Language.Elsa.Eval            as N
 
+
 ---------------------------------------------------------------------------------
 -- | Synthesis
 ---------------------------------------------------------------------------------
 
-type Spec e = [(e, e)]
+-- type Spec e = [(e, e)]
 type Env e = M.HashMap String e
 
 class Synthesizable e where
@@ -23,15 +24,11 @@ class Synthesizable e where
 exprStream :: Synthesizable e => Int -> S.Stream e
 exprStream vars = S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
 
-synthesize :: Synthesizable e => Env e -> Spec e -> Int -> Int -> [e]
-synthesize env spec max vars = filter (testSpec env spec) exprs
-  where exprs = S.take max (exprStream vars)
-
-testSpec :: Synthesizable e => Env e -> Spec e -> e -> Bool
-testSpec env spec expr = foldr folder True spec
- where
-  env' = M.insert "test" expr env
-  folder (i, o) b = b && checkEq env' i o
+synthesize :: Synthesizable e => Env e -> Spec e -> Int -> [e]
+synthesize env spec max = filter (testSpec env spec) exprs
+  where
+    vars = specVars spec
+    exprs = S.take max (exprStream vars)
 
 instance Synthesizable LN.Expr where
   fromHExpr n (HLam expr) = [ LN.ELam x | x <- fromHExpr (n + 1) expr ]
@@ -55,3 +52,16 @@ instance Synthesizable (N.Expr ()) where
 prependLambdas :: Int -> HExpr -> HExpr
 prependLambdas 0 expr = expr
 prependLambdas n expr = prependLambdas (n - 1) (HLam expr)
+
+---------------------------------------------------------------------------------
+-- | Spec
+---------------------------------------------------------------------------------
+
+data Spec e = Spec { specTarget :: String, specVars :: Int, specExamples :: [(e, e)] }
+
+testSpec :: Synthesizable e => Env e -> Spec e -> e -> Bool
+testSpec env spec expr = foldr folder True examples
+ where
+  examples = specExamples spec
+  env' = M.insert (specTarget spec) expr env
+  folder (i, o) b = b && checkEq env' i o
