@@ -173,10 +173,10 @@ dot :: Parser String
 dot = symbol "."
 
 identChar :: Parser Char
-identChar = alphaNumChar <|> oneOf ['_', '#', '\'', '?']
+identChar = alphaNumChar <|> oneOf ['_', '\'']
 
 identifier :: Parser String
-identifier = some identChar
+identifier = (:) <$> (letterChar <|> oneOf ['?']) <*> many identChar
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
