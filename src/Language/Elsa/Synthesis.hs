@@ -25,22 +25,22 @@ exprStream :: Synthesizable e => Int -> S.Stream e
 exprStream vars = S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
 
 synthesize env spec max = filter (testSpec env spec . pure) exprs
-  where
-    vars = snd . head $ specTargets spec
-    exprs = S.take max $ exprStream vars
+ where
+  vars  = snd . head $ specTargets spec
+  exprs = S.take max $ exprStream vars
 
 coSynthesize env spec max = filter (testSpec env spec) tuples
-  where
-    vars = map snd (specTargets spec)
-    streams = map exprStream vars :: [S.Stream LN.Expr]
-    tuples = observeMany max $ fairTuples $ map (msum . fmap return) streams
+ where
+  vars    = map snd (specTargets spec)
+  streams = map exprStream vars :: [S.Stream LN.Expr]
+  tuples  = observeMany max $ fairTuples $ map (msum . fmap return) streams
 
 testSpec :: Synthesizable e => Env e -> Spec e -> [e] -> Bool
 testSpec env spec exprs = foldr folder True examples
  where
-  examples = specExamples spec
+  examples    = specExamples spec
   targetNames = map fst (specTargets spec)
-  env' = foldr (uncurry M.insert) env (zip targetNames exprs)
+  env'        = foldr (uncurry M.insert) env (zip targetNames exprs)
   folder (i, o) b = b && checkEq env' i o
 
 instance Synthesizable LN.Expr where
@@ -49,8 +49,7 @@ instance Synthesizable LN.Expr where
     [ LN.EApp x1 x2 | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
   fromHExpr n HHole = [ LN.EBVar x | x <- [0 .. n - 1] ]
 
-  -- checkEq = LN.isNormEq
-  checkEq env e1 e2 = LN.isNormEqLimit 10 env e1 e2 == LN.IsNormEq
+  checkEq env e1 e2 = LN.evaluatesTo 10 env e1 e2 == Just True
 
 -- This is not working because N.isNormEq doesn't do alpha renaming while reducing
 instance Synthesizable (N.Expr ()) where

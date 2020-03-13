@@ -35,8 +35,8 @@ trueFalseSpec =
   Spec [("?true", 1), ("?false", 1)] [("ite ?true x y", "x"), ("ite ?false x y", "y")]
 
 boolSpec :: Spec LN.Expr
-boolSpec =
-  Spec [("?true", 1), ("?false", 1), ("?ite", 3)] [("?ite ?true x y", "x"), ("?ite ?false x y", "y")]
+boolSpec = Spec [("?true", 1), ("?false", 1), ("?ite", 3)]
+                [("?ite ?true x y", "x"), ("?ite ?false x y", "y")]
 
 ---------------------------------------------------------------------------------
 -- | Numerals
@@ -57,6 +57,7 @@ succSpec =
   Spec [("?succ", 3)] [("?succ zero", "one"), ("?succ one", "two"), ("?succ two", "three")]
 
 plusSpec :: Spec LN.Expr
+-- plusSpec = Spec [("?plus", 2)] [("?plus zero x", "x"), ("?plus (succ x) y", "succ (?plus x y)")]
 plusSpec = Spec
   [("?plus", 2)]
   [ ("?plus zero one", "one")

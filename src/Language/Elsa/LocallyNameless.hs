@@ -32,15 +32,20 @@ type Env = M.HashMap String Expr
 --------------------------------------------------------------------------------
 -- | Evaluation
 --------------------------------------------------------------------------------
-data NormEq = IsNormEq | IsNotNormEq | NormEqUnk deriving Eq
 
-isNormEq :: Env -> Expr -> Expr -> Bool
-isNormEq g e1 e2 = evalNO (subst e1 g) == subst e2 g
+evaluatesTo :: Int -> Env -> Expr -> Expr -> Maybe Bool
+evaluatesTo n g e1 e2 = do
+  (e1, _) <- evalNOLimit n (subst e1 g)
+  return $ e1 == subst e2 g
 
-isNormEqLimit :: Int -> Env -> Expr -> Expr -> NormEq
-isNormEqLimit n g e1 e2 = case evalNOLimit n (subst e1 g) of
-  Just (e1', _) -> if e1' == subst e2 g then IsNormEq else IsNotNormEq
-  Nothing       -> NormEqUnk
+isEtaBetaEq :: Int -> Env -> Expr -> Expr -> Maybe Bool
+isEtaBetaEq n g e1 e2 = do
+  (e1', _) <- evalNOLimit n (subst e1 g)
+  (e2', _) <- evalNOLimit n (subst e2 g)
+  return $ etaNorm e1' == etaNorm e2'
+
+eval :: Env -> Expr -> Expr
+eval env e = evalNO (subst e env)
 
 evalCBN :: Expr -> Expr
 evalCBN e@EFVar{}    = e
@@ -90,6 +95,33 @@ evalNOLimit n (EApp e1 e2) = case evalCBNLimit n e1 of
     (e2, n) <- evalNOLimit n e2
     return (EApp e1 e2, n)
   Nothing -> Nothing
+
+--------------------------------------------------------------------------------
+-- | Eta-conversion
+--------------------------------------------------------------------------------
+
+-- We use unbound instead of free for DeBruijn indices.
+isUnbound :: Int -> Expr -> Bool
+isUnbound i (ELam e    ) = isUnbound (i + 1) e
+isUnbound i (EApp e1 e2) = isUnbound i e1 || isUnbound i e2
+isUnbound i (EBVar i'  ) = i == i'
+isUnbound _ EFVar{}      = False
+
+fixpoint :: Eq a => (a -> a) -> a -> a
+fixpoint f x | x == fx   = fx
+             | otherwise = fixpoint f fx
+  where fx = f x
+
+etaNorm :: Expr -> Expr
+etaNorm = fixpoint etaConv
+
+etaConv :: Expr -> Expr
+etaConv (ELam (EApp e (EBVar 0))) =
+  if isUnbound 0 e then ELam (EApp e (EBVar 0)) else lift e (-1) 0
+etaConv (ELam e    ) = ELam (etaConv e)
+etaConv (EApp e1 e2) = EApp (etaConv e1) (etaConv e2)
+etaConv e@EBVar{}    = e
+etaConv e@EFVar{}    = e
 
 --------------------------------------------------------------------------------
 -- | Substitution
