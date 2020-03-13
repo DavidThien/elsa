@@ -8,7 +8,7 @@ import           Language.Elsa.Enumeration
 import qualified Language.Elsa.LocallyNameless as LN
 import qualified Language.Elsa.Types           as N
 import qualified Language.Elsa.Eval            as N
-
+import           Control.Monad.Logic
 
 ---------------------------------------------------------------------------------
 -- | Synthesis
@@ -24,11 +24,24 @@ class Synthesizable e where
 exprStream :: Synthesizable e => Int -> S.Stream e
 exprStream vars = S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
 
-synthesize :: Synthesizable e => Env e -> Spec e -> Int -> [e]
-synthesize env spec max = filter (testSpec env spec) exprs
+synthesize env spec max = filter (testSpec env spec . pure) exprs
   where
-    vars = specVars spec
-    exprs = S.take max (exprStream vars)
+    vars = snd . head $ specTargets spec
+    exprs = S.take max $ exprStream vars
+
+coSynthesize env spec max = filter (testSpec env spec) tuples
+  where
+    vars = map snd (specTargets spec)
+    streams = map exprStream vars :: [S.Stream LN.Expr]
+    tuples = observeMany max $ fairTuples $ map (msum . fmap return) streams
+
+testSpec :: Synthesizable e => Env e -> Spec e -> [e] -> Bool
+testSpec env spec exprs = foldr folder True examples
+ where
+  examples = specExamples spec
+  targetNames = map fst (specTargets spec)
+  env' = foldr (uncurry M.insert) env (zip targetNames exprs)
+  folder (i, o) b = b && checkEq env' i o
 
 instance Synthesizable LN.Expr where
   fromHExpr n (HLam expr) = [ LN.ELam x | x <- fromHExpr (n + 1) expr ]
@@ -57,11 +70,4 @@ prependLambdas n expr = prependLambdas (n - 1) (HLam expr)
 -- | Spec
 ---------------------------------------------------------------------------------
 
-data Spec e = Spec { specTarget :: String, specVars :: Int, specExamples :: [(e, e)] }
-
-testSpec :: Synthesizable e => Env e -> Spec e -> e -> Bool
-testSpec env spec expr = foldr folder True examples
- where
-  examples = specExamples spec
-  env' = M.insert (specTarget spec) expr env
-  folder (i, o) b = b && checkEq env' i o
+data Spec e = Spec { specTargets :: [(String, Int)], specExamples :: [(e, e)] }

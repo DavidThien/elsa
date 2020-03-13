@@ -18,18 +18,25 @@ booleans = M.fromList
   , ("not"  , "λ.0 false true")
   , ("and"  , "λ.λ.1 0 1")
   , ("or"   , "λ.λ.1 1 0")
+  , ("ite"  , "λ.λ.λ.2 1 0")
   ]
 
 andSpec :: Spec LN.Expr
--- andSpec = Spec [("?and true x", "x"), ("?and false x", "false")] "?and" 2
 andSpec = Spec
-  "?and"
-  2
-  [ ("?and true true"  , "true")
-  , ("?and true false" , "false")
+  [("?and", 2)]
+  [ ("?and true  true" , "true")
+  , ("?and true  false", "false")
   , ("?and false true" , "false")
   , ("?and false false", "false")
   ]
+
+trueFalseSpec :: Spec LN.Expr
+trueFalseSpec =
+  Spec [("?true", 1), ("?false", 1)] [("ite ?true x y", "x"), ("ite ?false x y", "y")]
+
+boolSpec :: Spec LN.Expr
+boolSpec =
+  Spec [("?true", 1), ("?false", 1), ("?ite", 3)] [("?ite ?true x y", "x"), ("?ite ?false x y", "y")]
 
 ---------------------------------------------------------------------------------
 -- | Numerals
@@ -46,12 +53,12 @@ numerals = M.fromList
   ]
 
 succSpec :: Spec LN.Expr
-succSpec = Spec "?succ" 1 [("?succ zero", "one"), ("?succ one", "two"), ("?succ two", "three")]
+succSpec =
+  Spec [("?succ", 3)] [("?succ zero", "one"), ("?succ one", "two"), ("?succ two", "three")]
 
 plusSpec :: Spec LN.Expr
 plusSpec = Spec
-  "?plus"
-  2
+  [("?plus", 2)]
   [ ("?plus zero one", "one")
   , ("?plus one zero", "one")
   , ("?plus one two" , "three")

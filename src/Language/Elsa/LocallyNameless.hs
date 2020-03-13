@@ -1,17 +1,6 @@
 {-# Language MultiWayIf #-}
 
-module Language.Elsa.LocallyNameless
-  ( isNormEq
-  , isNormEqLimit
-  , evalNO
-  , evalNOLimit
-  , evalCBNLimit
-  , parse
-  , Env
-  , Expr(..)
-  , NormEq(..)
-  )
-where
+module Language.Elsa.LocallyNameless where
 
 import qualified Data.HashMap.Strict           as M
 import           Text.Printf                    ( printf )

@@ -47,6 +47,13 @@ bottomUpStream = S.prepend [HHole] $ S.concat $ S.unfold unfolder init
     let exprs = grow exprs_2 exprs_1 in (allExprs exprs, (exprs_2 ++. exprs_1, exprs))
 
 
+fromStream :: (MonadPlus m) => S.Stream a -> m a
+fromStream = msum . fmap return
+
+fairTuples :: (MonadLogic m) => [m a] -> m [a]
+fairTuples [] = return []
+fairTuples (x:xs) = x >>- (\x -> fairTuples xs >>- (\xs -> return (x: xs)))
+
 -- ---------------------------------------------------------------------------------
 -- -- | Top-down enumeration
 -- ---------------------------------------------------------------------------------
