@@ -35,6 +35,10 @@ dist-newstyle
 cabal.sandbox.config
 .ghc.environment.*
 cabal.project.local
+*.aux
+*.fdb_latexmk
+*.fls
+*.pdf
 
 /tests/logs/
 /.stack-work/

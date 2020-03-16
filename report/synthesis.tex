@@ -1,0 +1,57 @@
+\section{Synthesizing from a Given Encoding}
+
+The first step we took for synthesizing expressions was to synthesize
+  individual functions given an encoding.
+
+\subsection{Church Encodings}
+For this synthesis task, we will be trying to generate the church encodings
+  for booleans and the natural numbers.
+The standard encoding for booleans is:
+\begin{align*}
+  & \text{true} = \lambda a . \lambda b . a \\
+  & \text{false} = \lambda a . \lambda b . b
+\end{align*}
+and for the natural numbers:
+\begin{align*}
+  & 0 = \lambda f . \lambda x . x \\
+  & 1 = \lambda f . \lambda x . f x \\
+  & 2 = \lambda f . \lambda x . f f x \\
+  & 3 = \lambda f . \lambda x . f f f x \\
+  & \ldots
+\end{align*}
+
+Because there are multiple ways to encode terms in lambda calculus, any
+  function definitions will inherently depend on the encoding.
+
+We are interested in synthesizing the following functions.
+
+\begin{align*}
+  & \text{and} = \lambda p . \lambda q . p q p
+  & \text{or} = \lambda p . \lambda q . p p q \\
+  & \text{not} = \lambda p . p (\lambda a . \lambda b . b) (\lambda a . \lambda b . a)
+  & \text{if}  = \lambda p . \lambda a . \lambda b . p a b \\
+  & \text{succ} = \lambda n . \lambda f . \lambda x . f (n f x)
+  & \text{add} = \lambda m . \lambda n . \lambda f . \lambda x . m f ( n f x)
+\end{align*}
+
+\subsection{Synthesis Specification}
+We will be using input-output examples as our specification, so the
+  behavioral constraints of our synthesis problem are simply the
+  evaluation of our examples for a given term or function.
+For instance, the input-output examples to synthesize \textit{and}
+  will look like $?and \, true \, true = true$,
+  $?and \, false \, true = false$,
+  $?and \, true \, false = false$, and
+  $?and \, false \, false = false$, where the $?$ before \texttt{and}
+  signifies the function we are synthesizing.
+Note that because there is no structural difference in untyped lambda
+  calculus between functions and terms, there is no need to differentiate
+  the two in our synthesizer.
+Additionally, we are using a bottom-up search strategy with some
+  special limitations on the form which are described in detail in
+  section \ref{sec:optimizations}.
+We will generate terms from the untyped lambda calculus grammar, with
+  the additional constraint that they must be in normal form.
+Additionally, we will be generating terms using De Bruijn indices rather
+  than with explicit variables names, in order to make evaluation of the
+  terms easier (largely so we don't have to worry about alpha-renaming).

@@ -1,0 +1,24 @@
+\section{Co-Synthesis}
+Because the behavior of functions only makes sense in the context of a
+  fixed encoding, it is natural to want to specify the behavior of
+  terms and functions in the grammar independently of any particular
+  encoding.
+Instead, we would like to be able to specify more abstract syntactic
+  operations on environment terms, and have the synthesizer find both
+  the terms' encodings, as well as the functions to go with those terms.
+Neither the terms, nor the functions have any inherent meaning outside
+  of a particular encoding, so the terms and functions \texttt{must} be
+  described together.
+We call synthesis from this description of the behavior of both terms
+  and functions, \texttt{co-synthesis}.
+
+Note that in the case of untyped lambda calculus, being able to specify
+  the behavior in terms of a particular encoding, or in some higher-level
+  specification, is necessary to synthesize terms.
+In theory, any expression could be ascribed any value, but being able to
+  synthesize the functions that operate how we want them to on those values
+  requires that they have a certain structure which allows for that.
+This means that there has to be some notion of what we want to do with
+  the terms we are generating, if we want them to actually be useful.
+
+\subsection{Search Process}

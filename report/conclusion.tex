@@ -1,0 +1,13 @@
+\section{Conclusion}
+In this paper, we have demonstrated a method for for synthesizing encodings
+  for untyped lambda calculus terms and functions in parallel, based on an
+  abstract specification of the behavior of those terms.
+We call this dual specification of terms and function \textit{co-synthesis}.
+Co-synthesis is made possible in the case of untyped lambda
+  calculus, because there is no structural difference between terms and
+  functions, only a difference in the meaning ascribed to them.
+This means that evaluation of unknown terms simply involves carrying out
+  regular lambda calculus evaluation with potential free variables, which
+  are the expressions we are synthesizing.
+Such a technique might not easily translate into other languages, as
+  evaluation for terms of unknown structure becomes more complex.
