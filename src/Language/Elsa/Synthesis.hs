@@ -3,11 +3,12 @@
 module Language.Elsa.Synthesis where
 
 import qualified Data.HashMap.Strict           as M
+import           Text.Printf                    ( printf )
 import qualified Data.Stream.Infinite          as S
 import           Language.Elsa.Enumeration
 import qualified Language.Elsa.LocallyNameless as LN
-import qualified Language.Elsa.Types           as N
-import qualified Language.Elsa.Eval            as N
+-- import qualified Language.Elsa.Types           as N
+-- import qualified Language.Elsa.Eval            as N
 import           Control.Monad.Logic
 
 ---------------------------------------------------------------------------------
@@ -19,7 +20,7 @@ type Env e = M.HashMap String e
 
 class Synthesizable e where
   fromHExpr :: Int -> HExpr -> [e]
-  checkEq :: Env e -> e -> e -> Bool
+  checkEq :: Bool -> Env e -> e -> e -> Bool
 
 exprStream :: Synthesizable e => Int -> S.Stream e
 exprStream vars = S.concat $ fmap (fromHExpr 0 . prependLambdas vars) bottomUpStream
@@ -41,7 +42,7 @@ testSpec env spec exprs = foldr folder True examples
   examples    = specExamples spec
   targetNames = map fst (specTargets spec)
   env'        = foldr (uncurry M.insert) env (zip targetNames exprs)
-  folder (i, o) b = b && checkEq env' i o
+  folder (i, o) b = b && checkEq (specEtaEq spec) env' i o
 
 instance Synthesizable LN.Expr where
   fromHExpr n (HLam expr) = [ LN.ELam x | x <- fromHExpr (n + 1) expr ]
@@ -49,17 +50,8 @@ instance Synthesizable LN.Expr where
     [ LN.EApp x1 x2 | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
   fromHExpr n HHole = [ LN.EBVar x | x <- [0 .. n - 1] ]
 
-  checkEq env e1 e2 = LN.evaluatesTo 10 env e1 e2 == Just True
-
--- This is not working because N.isNormEq doesn't do alpha renaming while reducing
-instance Synthesizable (N.Expr ()) where
-  fromHExpr n (HLam expr) =
-    [ N.ELam (N.Bind ("x" ++ show n) ()) x () | x <- fromHExpr (n + 1) expr ]
-  fromHExpr n (HApp expr1 expr2) =
-    [ N.EApp x1 x2 () | x1 <- fromHExpr n expr1, x2 <- fromHExpr n expr2 ]
-  fromHExpr n HHole = [ N.EVar ("x" ++ show x) () | x <- [0 .. n - 1] ]
-
-  checkEq = N.isNormEq
+  checkEq True  env e1 e2 = LN.isEtaBetaEq 10 env e1 e2 == Just True
+  checkEq False env e1 e2 = LN.evaluatesTo 10 env e1 e2 == Just True
 
 prependLambdas :: Int -> HExpr -> HExpr
 prependLambdas 0 expr = expr
@@ -69,4 +61,18 @@ prependLambdas n expr = prependLambdas (n - 1) (HLam expr)
 -- | Spec
 ---------------------------------------------------------------------------------
 
-data Spec e = Spec { specTargets :: [(String, Int)], specExamples :: [(e, e)] }
+data Spec e = Spec { specTargets :: [(String, Int)], specExamples :: [(e, e)], specEtaEq :: Bool }
+
+instance Show e => Show (Spec e) where
+  show (Spec targets examples _) = printf "Spec {\n  targets  = %s,\n  examples = %s\n}"
+                                          (show targets)
+                                          (fmtExamples examples)
+   where
+    fmtExample (i, o) = printf "             , (%s, %s)\n" (show i) (show o)
+    fmtExamples []       = "[]"
+    fmtExamples [(i, o)] = printf "[ (%s, %s) ]" (show i) (show o)
+    fmtExamples ((i, o) : xs) =
+      printf "[ (%s, %s)\n" (show i) (show o)
+        ++ foldr (\ex acc -> fmtExample ex ++ acc) "" xs
+        ++ "             ]"
+

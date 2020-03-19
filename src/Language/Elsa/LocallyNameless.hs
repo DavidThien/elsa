@@ -29,6 +29,18 @@ instance Show Expr where
 
 type Env = M.HashMap String Expr
 
+size :: Expr -> Int
+size (ELam e) = size e + 1
+size (EApp e1 e2) = size e1 + size e2 + 1
+size EBVar{} = 1
+size EFVar{} = 1
+
+height :: Expr -> Int
+height (ELam e) = height e + 1
+height (EApp e1 e2) = max (height e1) (height e2) + 1
+height EBVar{} = 1
+height EFVar{} = 1
+
 --------------------------------------------------------------------------------
 -- | Evaluation
 --------------------------------------------------------------------------------
