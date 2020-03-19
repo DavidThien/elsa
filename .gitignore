@@ -39,6 +39,7 @@ cabal.project.local
 *.fdb_latexmk
 *.fls
 *.pdf
+*.synctex.gz
 
 /tests/logs/
 /.stack-work/
