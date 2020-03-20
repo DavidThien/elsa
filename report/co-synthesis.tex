@@ -1,24 +1,81 @@
-\section{Co-Synthesis} \label{sec:co-synthesis}
-Because the behavior of functions only makes sense in the context of a
-  fixed encoding, it is natural to want to specify the behavior of
-  terms and functions in the grammar independently of any particular
-  encoding.
-Instead, we would like to be able to specify more abstract syntactic
-  operations on environment terms, and have the synthesizer find both
-  the terms' encodings, as well as the functions to go with those terms.
-Neither the terms, nor the functions have any inherent meaning outside
-  of a particular encoding, so the terms and functions \texttt{must} be
-  described together.
-We call synthesis from this description of the behavior of both terms
-  and functions, \texttt{co-synthesis}.
+\section{Co-Synthesis of Encodings} \label{sec:co-synthesis}
+%
+The functions described in the previous section only makes
+sense in the context of a fixed encoding, but in general, a
+data type accepts more than one.
+%
+As encodings are just expressions we would like to
+automatically derive them as a result of synthesis.
+%
+To do so we first need to find a way to give an abstract
+specification of the meaning of a data type and we need to
+do it in a way that is independent of an underlying
+encoding.
+%
+In the following, we see how we can extend the ideas
+presented in \cref{sec:synthesis} to express these abstract
+specifications in a natural way.
 
-Note that in the case of untyped lambda calculus, being able to specify
-  the behavior in terms of a particular encoding, or in some higher-level
-  specification, is necessary to synthesize terms.
-In theory, any expression could be ascribed any value, but being able to
-  synthesize the functions that operate how we want them to on those values
-  requires that they have a certain structure which allows for that.
-This means that there has to be some notion of what we want to do with
-  the terms we are generating, if we want them to actually be useful.
+In general, our approach consist of specifying the behavior
+of data types in relation with the functions that operates
+on them.
+%
+We call this a \emph{co-specification} of a data type and
+its functions.
+%
+We also refer to the process of synthesizing an encoding
+together with the functions that operate on it as
+\emph{co-synthesis}.
 
-\subsection{Search Process}
+Our next key insight is that we can build natural and
+concise co-specifications by looking at the introduction and
+elimination forms of a data type.
+%
+Consider booleans for example.
+%
+Their introduction corresponds to the values \true and \false
+and their elimination corresponds to case analysis using the
+if-then-else (\f{ite}) function.
+%
+Using the ideas presented in \cref{sec:io} we can co-specify
+\true, \false and \f{ite} as:
+%
+\begin{align*}
+  \f{?ite}\;\f{?true}\;x\;y &\equiv x \\
+  \f{?ite}\;\f{?false}\;x\;y &\equiv y
+\end{align*}
+
+The co-specification for natural numbers requires a little
+bit more work.
+%
+First, we identify $0$ and \f{succ} as the introduction
+forms of natural numbers in its usual inductive definition.
+%
+Second, we note that the elimination form of natural numbers
+correspond to the ability of defining recursive functions on
+them.
+%
+Instead of spelling out a general recursive principle we
+specify the recursive behavior by picking a particular
+recursive definition.
+%
+In our case we specify the elimination form in terms of the
+recursive definition of the function \f{plus}.
+%
+We can now co-specify $0$, \f{succ} and \f{plus} as:
+\begin{align*}
+  \f{?plus}\;\f{?}0\;y &\equiv y\\
+  \f{?plus}\;(\f{?succ}\;x)\;y &\equiv \f{?succ}\;(\f{?plus}\;x\;y)\\
+\end{align*}
+
+We conclude by showing how these ideas also apply to
+non-recursive data types by showing a co-specification for pairs.
+%
+The introduction form corresponds to the constructor
+\f{pair} and the elimination forms to the first and
+second projections.
+%
+\begin{align*}
+  \f{?first}\;(\f{?pair}\;x\;y) &\equiv x\\
+  \f{?second}\;(\f{?pair}\;x\;y) &\equiv y\\
+\end{align*}

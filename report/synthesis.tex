@@ -1,12 +1,13 @@
-\section{Synthesizing Functions for a Given Encoding}
+\section{Synthesizing Functions for a Given Encoding} \label{sec:synthesis}
 %
 As a first step we tackle the problem of synthesizing
 functions over a given encoding.
 %
 We begin with an overview of the standard encoding for the
-data types on which we will be focusing.
+data types on which we focused our development.
 %
-We then explore how to specify the behavior of functions.
+We then explore how to specify the behavior of functions for
+their synthesis.
 
 % The first step we took for synthesizing expressions was to synthesize
 %   individual functions given an encoding.
@@ -31,8 +32,8 @@ The standard encoding for the boolean values \emph{true} and
 %
 Intuitively, boolean logic is interpreted as a choice and
 boolean values are represented as functions of two
-parameters making this choice: \emph{true} chooses its first
-parameter and \emph{false} chooses its second parameter.
+parameters making this choice: \true chooses its first
+parameter and \false chooses its second parameter.
 
 \paragraph{Natural numbers}
 %
@@ -60,34 +61,20 @@ function twice, \emph{etc.}
 \paragraph{Pairs}
 %
 A pair is represented as a function that takes two arguments
-and returns a higher-order function which when provided a
-function as argument applies it to the two components of the
-pair.
+and returns a higher-order function which when provided with
+a function as argument applies it to the two components of
+the pair.
 %
 \begin{align*}
   \pair &= \lambda x. \lambda y. \lambda f.f\,x\,y
 \end{align*}
 
-% Because there are multiple ways to encode terms in lambda calculus, any
-%   function definitions will inherently depend on the encoding.
-
-% We are interested in synthesizing the following functions.
-
-% \begin{align*}
-%   & \text{and} = \lambda p . \lambda q . p q p
-%   & \text{or} = \lambda p . \lambda q . p p q \\
-%   & \text{not} = \lambda p . p (\lambda a . \lambda b . b) (\lambda a . \lambda b . a)
-%   & \text{if}  = \lambda p . \lambda a . \lambda b . p a b \\
-%   & \text{succ} = \lambda n . \lambda f . \lambda x . f (n f x)
-%   & \text{add} = \lambda m . \lambda n . \lambda f . \lambda x . m f ( n f x)
-% \end{align*}
-
 \subsection{Synthesis from Examples} \label{sec:io}
 %
-We now turn to the question of how we can specify a function
-behavior.
+We now turn to the question of how the behavior of a
+function can be specified.
 %
-As it have proven useful in many scenarios, we explore the
+As it has proven useful in many scenarios, we explore the
 idea of using input-output examples.
 
 Consider, for instance, the boolean function \f{and}.
@@ -139,7 +126,7 @@ the definition:
 \subsection{Beyond Extensionality}
 %
 The specifications presented in the previous section only
-talk about the extensional behavior of functions.
+spell out the extensional behavior of functions.
 %
 We found that it is also often useful to constraint the way
 functions evaluate.
@@ -166,9 +153,8 @@ evaluates the second argument:
   \f{and} &= \lambda p. \lambda q. q\,p\,q
 \end{align}
 %
-We note that this sort of evaluation behavior can be
-specified if we allow free variables when specifying
-equivalences.
+One of our main insights is that this sort of evaluation
+behavior can be specified using free variables.
 %
 For example, the function \f{and} could be specified as:
 %
@@ -225,9 +211,8 @@ equivalence when we expand \f{plus} with the definition in
 \labelcref{eq:plus-def}.
 %
 Under normal order, $\f{plus}\;0\;y$ evaluates to $\lambda
-f.\lambda x. y\,f\,x$.
-%
-This term is only $\eta$-equivalent to $y$.
+f.\lambda x. y\,f\,x$ which is only $\eta$-equivalent to
+$y$.
 
 % We will be using input-output examples as our specification, so the
 %   behavioral constraints of our synthesis problem are simply the
