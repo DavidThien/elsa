@@ -5,6 +5,8 @@ functions over a given encoding.
 %
 We begin with an overview of the standard encoding for the
 data types on which we will be focusing.
+%
+We then explore how to specify the behavior of functions.
 
 % The first step we took for synthesizing expressions was to synthesize
 %   individual functions given an encoding.
@@ -48,11 +50,11 @@ function twice, \emph{etc.}
 %
 \begin{align*}
   0 & = \lambda f . \lambda x . x \\
-  1 & = \lambda f . \lambda x . f x \\
-  2 & = \lambda f . \lambda x . f (f x) \\
-  3 & = \lambda f . \lambda x . f (f (f x)) \\
+  1 & = \lambda f . \lambda x . f\,x \\
+  2 & = \lambda f . \lambda x . f\,(f\,x) \\
+  3 & = \lambda f . \lambda x . f\,(f\,(f\,x)) \\
   \vdots & \\
-  n & = \lambda f . \lambda x . f^{\circ n} x
+  n & = \lambda f . \lambda x . f^{\circ n}\,x
 \end{align*}
 
 \paragraph{Pairs}
@@ -63,7 +65,7 @@ function as argument applies it to the two components of the
 pair.
 %
 \begin{align*}
-  \pair &= \lambda x. \lambda y. \lambda f.f x y
+  \pair &= \lambda x. \lambda y. \lambda f.f\,x\,y
 \end{align*}
 
 % Because there are multiple ways to encode terms in lambda calculus, any
@@ -88,7 +90,7 @@ behavior.
 As it have proven useful in many scenarios, we explore the
 idea of using input-output examples.
 
-Consider, for example, the boolean function \f{and}.
+Consider, for instance, the boolean function \f{and}.
 We can specify its behavior extensionally as follows:
 %
 \begin{align*}
@@ -132,6 +134,8 @@ the definition:
   \f{plus} &= \lambda m. \lambda n. \lambda f. \lambda x. m\,f\,(n\,f\,x)
 \end{align}
 
+
+
 \subsection{Beyond Extensionality}
 %
 The specifications presented in the previous section only
@@ -173,7 +177,7 @@ For example, the function \f{and} could be specified as:
   \f{?and}\,\false\,x &\equiv \false \\
 \end{align*}
 %
-Here, the variable $x$ is meant to be free as opposed to
+Here, the variable $x$ is meant to remain free as opposed to
 \true and \false which should be expanded to their
 definition.
 %
@@ -189,24 +193,41 @@ section cannot distinguish the definition in
   \f{plus} &= \lambda m.\lambda n.\lambda f.\lambda x.n\,f\,(m\,f\,x)
 \end{align}
 %
-They differ on the order in which the arguments $n$ and $m$
+They differ in the order in which the arguments $m$ and $n$
 are applied to get the final result.
 %
 In this case, we can give an alternative specification based
 on the evaluation of \f{plus} seen as a recursively-defined
-function.
+function:
 %
 \begin{align*}
   \f{?plus}\;0\;y &\equiv y \\
   \f{?plus}\;(\f{succ}\;x)\;y &\equiv \f{succ}\;(\f{?plus}\;x\;y)
 \end{align*}
 %
-Here, \f{succ} is the successor function defined as:
+where \f{succ} is the successor function defined as:
 %
 \begin{align*}
   \f{succ} = \lambda n. \lambda f. \lambda x. f\,(n\,f\,x)
 \end{align*}
 
+This specification does not just fix the order in which $m$
+and $n$ are evaluated but also rule out various spurius
+results which satisfy the incomplete specification given in
+\cref{sec:io}.
+%
+However, checking conformance with this sort of
+specifications is in general more challenging because it
+requires $\eta$-conversion.
+%
+To see why consider the evaluation of the term in the first
+equivalence when we expand \f{plus} with the definition in
+\labelcref{eq:plus-def}.
+%
+Under normal order, $\f{plus}\;0\;y$ evaluates to $\lambda
+f.\lambda x. y\,f\,x$.
+%
+This term is only $\eta$-equivalent to $y$.
 
 % We will be using input-output examples as our specification, so the
 %   behavioral constraints of our synthesis problem are simply the
