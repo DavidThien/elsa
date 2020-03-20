@@ -80,14 +80,13 @@ pair.
 %   & \text{add} = \lambda m . \lambda n . \lambda f . \lambda x . m f ( n f x)
 % \end{align*}
 
-\subsection{Synthesis from Examples}
+\subsection{Synthesis from Examples} \label{sec:io}
 %
-We now turn to the question of how we can specify the
-behavior of functions for their synthesis.
+We now turn to the question of how we can specify a function
+behavior.
 %
 As it have proven useful in many scenarios, we explore the
-idea of using input-output examples to specify the behavior
-of functions.
+idea of using input-output examples.
 
 Consider, for example, the boolean function \f{and}.
 We can specify its behavior extensionally as follows:
@@ -104,17 +103,19 @@ with \f{?} and by convenience we refer to the boolean values
 \true and \false by name, but they should be understood as
 if their definition was expanded.
 %
-With this specification we can successfully find the
+With this specification our tool can successfully find the
 standard definition of \f{and} for church booleans:
-\begin{align*}
+%
+\begin{align}
+  \label{eq:and-def}
   \f{and} &= \lambda p. \lambda q. p\,q\,p
-\end{align*}
+\end{align}
 
 Similarly, we can apply this idea to numerals to specify the
 behavior of the \f{plus} function.
 %
 In this case, however, we cannot specify the behavior on all
-possible inputs but we can select a set of representative one.
+possible inputs but we can select a representative set.
 %
 \begin{align*}
   \f{?plus}\; 0\; 1 &\equiv 1\\
@@ -126,9 +127,86 @@ possible inputs but we can select a set of representative one.
 The above specification is sufficient for our tool to find
 the definition:
 %
-\begin{align*}
+\begin{align}
+  \label{eq:plus-def}
   \f{plus} &= \lambda m. \lambda n. \lambda f. \lambda x. m\,f\,(n\,f\,x)
+\end{align}
+
+\subsection{Beyond Extensionality}
+%
+The specifications presented in the previous section only
+talk about the extensional behavior of functions.
+%
+We found that it is also often useful to constraint the way
+functions evaluate.
+%
+The ability to do so proved to be important for the
+specification of encodings as we will see in
+\cref{sec:co-synthesis}.
+
+Recall the resulting encoding for \f{and} given in
+\labelcref{eq:and-def}.
+%
+This definition uses the first argument as the test.
+%
+Under normal order evaluation, this correspond to the usual
+short-circuit where the second argument is only
+evaluated when the first one is known to be false.
+%
+The purely extensional specification given in \cref{sec:io}
+cannot distinguish this from a function that first
+evaluates the second argument:
+%
+\begin{align}
+  \label{eq:and-def2}
+  \f{and} &= \lambda p. \lambda q. q\,p\,q
+\end{align}
+%
+We note that this sort of evaluation behavior can be
+specified if we allow free variables when specifying
+equivalences.
+%
+For example, the function \f{and} could be specified as:
+%
+\begin{align*}
+  \f{?and}\,\true\,x &\equiv x \\
+  \f{?and}\,\false\,x &\equiv \false \\
 \end{align*}
+%
+Here, the variable $x$ is meant to be free as opposed to
+\true and \false which should be expanded to their
+definition.
+%
+This specification effectively rule out
+\labelcref{eq:and-def2} from the possible results.
+
+Similarly, the specification for \f{plus} in the previous
+section cannot distinguish the definition in
+\labelcref{eq:plus-def} from:
+%
+\begin{align}
+  \label{eq:plus-def2}
+  \f{plus} &= \lambda m.\lambda n.\lambda f.\lambda x.n\,f\,(m\,f\,x)
+\end{align}
+%
+They differ on the order in which the arguments $n$ and $m$
+are applied to get the final result.
+%
+In this case, we can give an alternative specification based
+on the evaluation of \f{plus} seen as a recursively-defined
+function.
+%
+\begin{align*}
+  \f{?plus}\;0\;y &\equiv y \\
+  \f{?plus}\;(\f{succ}\;x)\;y &\equiv \f{succ}\;(\f{?plus}\;x\;y)
+\end{align*}
+%
+Here, \f{succ} is the successor function defined as:
+%
+\begin{align*}
+  \f{succ} = \lambda n. \lambda f. \lambda x. f\,(n\,f\,x)
+\end{align*}
+
 
 % We will be using input-output examples as our specification, so the
 %   behavioral constraints of our synthesis problem are simply the
