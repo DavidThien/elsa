@@ -25,13 +25,16 @@ booleans = M.fromList
 
 andSpec :: Spec LN.Expr
 andSpec = Spec [("?and", 2)] [("?and true x", "x"), ("?and false x", "false")] False
--- andSpec = Spec
---   [("?and", 2)]
---   [ ("?and true  true" , "true")
---   , ("?and true  false", "false")
---   , ("?and false true" , "false")
---   , ("?and false false", "false")
---   ]
+
+andSpec' :: Spec LN.Expr
+andSpec' = Spec
+  [("?and", 2)]
+  [ ("?and true  true" , "true")
+  , ("?and true  false", "false")
+  , ("?and false true" , "false")
+  , ("?and false false", "false")
+  ]
+  False
 
 orSpec :: Spec LN.Expr
 orSpec = Spec [("?or", 2)] [("?or true x", "true"), ("?or false x", "x")] False
@@ -73,7 +76,8 @@ succSpec =
   Spec [("?succ", 3)] [("?succ zero", "one"), ("?succ one", "two"), ("?succ two", "three")] False
 
 plusSpec :: Spec LN.Expr
-plusSpec = Spec [("?plus", 2)] [("?plus zero x", "x"), ("?plus (succ x) y", "succ (?plus x y)")] True
+plusSpec =
+  Spec [("?plus", 2)] [("?plus zero x", "x"), ("?plus (succ x) y", "succ (?plus x y)")] True
 -- plusSpec = Spec
 --   [("?plus", 2)]
 --   [ ("?plus zero one", "one")
@@ -124,7 +128,10 @@ lists = M.fromList
   ]
 
 headSpec :: Spec LN.Expr
-headSpec = Spec [("?head", 1)] [("cons (?head (cons x xs)) (tail (cons x xs))", "cons x xs"), ("?head nil", "nil")] False
+headSpec = Spec
+  [("?head", 1)]
+  [("cons (?head (cons x xs)) (tail (cons x xs))", "cons x xs"), ("?head nil", "nil")]
+  False
 
 
 instance IsString LN.Expr where

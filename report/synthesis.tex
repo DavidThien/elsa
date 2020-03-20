@@ -1,57 +1,152 @@
-\section{Synthesizing from a Given Encoding}
+\section{Synthesizing Functions for a Given Encoding}
+%
+As a first step we tackle the problem of synthesizing
+functions over a given encoding.
+%
+We begin with an overview of the standard encoding for the
+data types on which we will be focusing.
 
-The first step we took for synthesizing expressions was to synthesize
-  individual functions given an encoding.
+% The first step we took for synthesizing expressions was to synthesize
+%   individual functions given an encoding.
 
 \subsection{Church Encodings}
-For this synthesis task, we will be trying to generate the church encodings
-  for booleans and the natural numbers.
-The standard encoding for booleans is:
+%
+We tested and focused our development on three
+different data types: \emph{booleans}, \emph{natural
+numbers} and \emph{pairs}.
+%
+We give their standard encodings below.
+
+\paragraph{Booleans}
+%
+The standard encoding for the boolean values \emph{true} and
+\emph{false} is given by:
+%
 \begin{align*}
-  & \text{true} = \lambda a . \lambda b . a \\
-  & \text{false} = \lambda a . \lambda b . b
+  \text{\true} &= \lambda a . \lambda b . a \\
+  \text{\false} &= \lambda a . \lambda b . b
 \end{align*}
-and for the natural numbers:
+%
+Intuitively, boolean logic is interpreted as a choice and
+boolean values are represented as functions of two
+parameters making this choice: \emph{true} chooses its first
+parameter and \emph{false} chooses its second parameter.
+
+\paragraph{Natural numbers}
+%
+Church numerals are the standard representation of natural
+numbers in the lambda calculus.
+%
+In this encoding the number $n$ is represented as a
+higher-order function that maps a function $f$ to its
+$n$-fold composition.
+%
+The value of the numeral is equivalent to the number of
+times the function gets applied: 0 does not apply the
+function at all, 1 applies the function once, 2 applies the
+function twice, \emph{etc.}
+%
 \begin{align*}
-  & 0 = \lambda f . \lambda x . x \\
-  & 1 = \lambda f . \lambda x . f x \\
-  & 2 = \lambda f . \lambda x . f f x \\
-  & 3 = \lambda f . \lambda x . f f f x \\
-  & \ldots
+  0 & = \lambda f . \lambda x . x \\
+  1 & = \lambda f . \lambda x . f x \\
+  2 & = \lambda f . \lambda x . f (f x) \\
+  3 & = \lambda f . \lambda x . f (f (f x)) \\
+  \vdots & \\
+  n & = \lambda f . \lambda x . f^{\circ n} x
 \end{align*}
 
-Because there are multiple ways to encode terms in lambda calculus, any
-  function definitions will inherently depend on the encoding.
-
-We are interested in synthesizing the following functions.
-
+\paragraph{Pairs}
+%
+A pair is represented as a function that takes two arguments
+and returns a higher-order function which when provided a
+function as argument applies it to the two components of the
+pair.
+%
 \begin{align*}
-  & \text{and} = \lambda p . \lambda q . p q p
-  & \text{or} = \lambda p . \lambda q . p p q \\
-  & \text{not} = \lambda p . p (\lambda a . \lambda b . b) (\lambda a . \lambda b . a)
-  & \text{if}  = \lambda p . \lambda a . \lambda b . p a b \\
-  & \text{succ} = \lambda n . \lambda f . \lambda x . f (n f x)
-  & \text{add} = \lambda m . \lambda n . \lambda f . \lambda x . m f ( n f x)
+  \pair &= \lambda x. \lambda y. \lambda f.f x y
 \end{align*}
 
-\subsection{Synthesis Specification}
-We will be using input-output examples as our specification, so the
-  behavioral constraints of our synthesis problem are simply the
-  evaluation of our examples for a given term or function.
-For instance, the input-output examples to synthesize \textit{and}
-  will look like $?and \, true \, true = true$,
-  $?and \, false \, true = false$,
-  $?and \, true \, false = false$, and
-  $?and \, false \, false = false$, where the $?$ before \texttt{and}
-  signifies the function we are synthesizing.
-Note that because there is no structural difference in untyped lambda
-  calculus between functions and terms, there is no need to differentiate
-  the two in our synthesizer.
-Additionally, we are using a bottom-up search strategy with some
-  special limitations on the form which are described in detail in
-  section \ref{sec:optimizations}.
-We will generate terms from the untyped lambda calculus grammar, with
-  the additional constraint that they must be in normal form.
-Additionally, we will be generating terms using De Bruijn indices rather
-  than with explicit variables names, in order to make evaluation of the
-  terms easier (largely so we don't have to worry about alpha-renaming).
+% Because there are multiple ways to encode terms in lambda calculus, any
+%   function definitions will inherently depend on the encoding.
+
+% We are interested in synthesizing the following functions.
+
+% \begin{align*}
+%   & \text{and} = \lambda p . \lambda q . p q p
+%   & \text{or} = \lambda p . \lambda q . p p q \\
+%   & \text{not} = \lambda p . p (\lambda a . \lambda b . b) (\lambda a . \lambda b . a)
+%   & \text{if}  = \lambda p . \lambda a . \lambda b . p a b \\
+%   & \text{succ} = \lambda n . \lambda f . \lambda x . f (n f x)
+%   & \text{add} = \lambda m . \lambda n . \lambda f . \lambda x . m f ( n f x)
+% \end{align*}
+
+\subsection{Synthesis from Examples}
+%
+We now turn to the question of how we can specify the
+behavior of functions for their synthesis.
+%
+As it have proven useful in many scenarios, we explore the
+idea of using input-output examples to specify the behavior
+of functions.
+
+Consider, for example, the boolean function \f{and}.
+We can specify its behavior extensionally as follows:
+%
+\begin{align*}
+\f{?and}\,\true\,\true    &\equiv \true \\
+\f{?and}\,\true\,\false   &\equiv \false \\
+\f{?and}\,\false\,\true   &\equiv \false \\
+\f{?and}\,\false\, \false &\equiv \false \\
+\end{align*}
+%
+By convention, we prefix the functions we wish to synthesize
+with \f{?} and by convenience we refer to the boolean values
+\true and \false by name, but they should be understood as
+if their definition was expanded.
+%
+With this specification we can successfully find the
+standard definition of \f{and} for church booleans:
+\begin{align*}
+  \f{and} &= \lambda p. \lambda q. p\,q\,p
+\end{align*}
+
+Similarly, we can apply this idea to numerals to specify the
+behavior of the \f{plus} function.
+%
+In this case, however, we cannot specify the behavior on all
+possible inputs but we can select a set of representative one.
+%
+\begin{align*}
+  \f{?plus}\; 0\; 1 &\equiv 1\\
+  \f{?plus}\; 1\; 0 &\equiv 1\\
+  \f{?plus}\; 1\; 2 &\equiv 3\\
+  \f{?plus}\; 2\; 2 &\equiv 4\\
+\end{align*}
+%
+The above specification is sufficient for our tool to find
+the definition:
+%
+\begin{align*}
+  \f{plus} &= \lambda m. \lambda n. \lambda f. \lambda x. m\,f\,(n\,f\,x)
+\end{align*}
+
+% We will be using input-output examples as our specification, so the
+%   behavioral constraints of our synthesis problem are simply the
+%   evaluation of our examples for a given term or function.
+% For instance, the input-output examples to synthesize \textit{and}
+%   will look like $?and \, true \, true = true$,
+%   $?and \, false \, true = false$,
+%   $?and \, true \, false = false$, and
+%   $?and \, false \, false = false$, where the $?$ before \texttt{and}
+%   signifies the function we are synthesizing.
+% Note that because there is no structural difference in untyped lambda
+%   calculus between functions and terms, there is no need to differentiate
+%   the two in our synthesizer.
+% Additionally, we are using a bottom-up search strategy with some
+%   special limitations on the form which are described in detail in
+%   section \ref{sec:optimizations}.
+% We will generate terms from the untyped lambda calculus grammar, with
+%   the additional constraint that they must be in normal form.
+% Additionally, we will be generating terms using De Bruijn indices rather
+%   than with explicit variables names, in order to make evaluation of the
+%   terms easier (largely so we don't have to worry about alpha-renaming).
