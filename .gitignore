@@ -41,6 +41,8 @@ cabal.project.local
 *.pdf
 *.synctex.gz
 auto/
+*.blg
+*.bbl
 
 /tests/logs/
 /.stack-work/
