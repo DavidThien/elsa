@@ -2,6 +2,33 @@
 Here we describe optimizations that we implemented for enumerating lambda
   calculus terms.
 
+\subsection{Number of Function Arguments}
+One minor optimization that we were able to implement was to require
+  functions to be enumerated in a form such that the first $n$ non-terminals
+  were lambdas where $n$ is the number of arguments to the function.
+For example, the function $\f{add}$ which takes two arguments must have the
+  form $\lambda \lambda E$ where $E$ is the rest of the expression.
+Although this is a minor optimization, it allowed us to effectively decrease
+  the depth of our search space by the number of arguments to a function, and
+  we would not have been able to synthesize $\f{add}$ without it.
+
 \subsection{Normal Form Enumeration}
 We always generate terms in normal form.
-%% TODO: Describe algorithm for this (it's sort of interesting)
+
+\subsection{Enumerating Closed Terms}
+One additional challenge in generating lambda calculus expressions lies in
+  generating only closed terms; terms with no free variables.
+With explicit names, it becomes necessary for the synthesizer to have some
+  sort of variable context that it passes around when generating variable
+  terms, both so that it knows what names to gives new bindings, as well as
+  to know which bindings it has available.
+Passing through such a context introduces a lot of complexity to the
+  enumeration itself.
+In order to deal with this challenge, we exclusively use De Bruijn indices
+  to reference our variables.
+This simplifies our enumeration greatly, as we no longer need to pass through
+  a context to know which variable names are bound, instead we can just keep
+  track of the depth of the expression.
+
+Using De Bruijn indices has the added benefit of removing alpha renaming and
+  alpha equivalence from our expression evaluation.
