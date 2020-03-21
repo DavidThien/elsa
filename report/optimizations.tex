@@ -1,36 +1,67 @@
-\section{Optimizations} \label{sec:optimizations}
-Here we describe optimizations that we implemented for enumerating lambda
-  calculus terms.
+\section{A Enumerative Synthesizer} \label{sec:optimizations}
+%
+To test our ideas in practice we implemented a simple
+enumerative synthesizer.
+%
+In the remainder of this section we detail some of the
+challenges and optimizations we implemented.
+
+\subsection{Beta-Normal Form Enumeration}
+%
+The synthesizer enumerates terms in beta-normal form.
+%
+This is probably the most important optimization as it
+largely reduces the search space.
+%
+More specifically, our implementation makes a bottom up
+enumeration of the expressions in the following grammar:
+
+\begin{align*}
+  e & ::= \lambda x. e ~|~ \lambda x. t \\
+  t & ::= x ~|~ t\;t ~|~ t\;e
+\end{align*}
 
 \subsection{Number of Function Arguments}
 One minor optimization that we were able to implement was to require
   functions to be enumerated in a form such that the first $n$ non-terminals
   were lambdas where $n$ is the number of arguments to the function.
 For example, the function $\f{add}$ which takes two arguments must have the
-  form $\lambda \lambda E$ where $E$ is the rest of the expression.
+  form $\lambda x. \lambda y. E$ where $E$ is the rest of the expression.
 Although this is a minor optimization, it allowed us to effectively decrease
   the depth of our search space by the number of arguments to a function, and
   we would not have been able to synthesize $\f{add}$ without it.
 
 \subsection{Enumerating Closed Terms}
-One additional challenge in generating lambda calculus expressions lies in
-  generating only closed terms; terms with no free variables.
-With explicit names, it becomes necessary for the synthesizer to have some
-  sort of variable context that it passes around when generating variable
-  terms, both so that it knows what names to gives new bindings, as well as
-  to know which bindings it has available.
-Passing through such a context introduces a lot of complexity to the
-  enumeration itself.
-In order to deal with this challenge, we exclusively use De Bruijn indices
-  to reference our variables.
-This simplifies our enumeration greatly, as we no longer need to pass through
-  a context to know which variable names are bound, instead we can just keep
-  track of the depth of the expression.
+%
+One additional challenge in generating lambda expressions
+lies in generating only closed terms; terms with no free
+variables.
+%
+A nice trick we found makes this easier is to generate
+variables in a separate step.
+%
+That is, we first enumerate lambda expressions were we leave
+a ``hole'' in the place a variable should go and then fill
+those holes with variables in scope which is easier once the
+rest of the term is fixed.
 
-Using De Bruijn indices has the added benefit of removing alpha renaming and
-  alpha equivalence from our expression evaluation.
+We also found it easier to work with De Bruijn indices.
+%
+With explicit names, it becomes necessary for the
+synthesizer to have some sort of variable context that it
+passes around when generating variable terms, both so that
+it knows what names to gives new bindings, as well as to
+know which bindings it has available.
+%
+Passing through such a context introduces a lot of
+complexity to the enumeration itself.
+%
+Using De Bruijn indices has the added benefit of removing
+alpha renaming and alpha equivalence from our expression
+evaluation.
 
-\subsection{Beta-Normal Form Enumeration}
-The most subtle optimization that we have implemented is only generating terms
-  in beta-normal form.
-
+  % In order to deal with this challenge, we exclusively use De
+  % Bruijn indices to reference our variables.
+  % This simplifies our enumeration greatly, as we no longer need to pass through
+  % a context to know which variable names are bound, instead we can just keep
+  % track of the depth of the expression.
