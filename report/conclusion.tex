@@ -9,5 +9,6 @@ Co-synthesis is made possible in the case of untyped lambda
 This means that evaluation of unknown terms simply involves carrying out
   regular lambda calculus evaluation with potential free variables, which
   are the expressions we are synthesizing.
-Such a technique might not easily translate into other languages, as
-  evaluation for terms of unknown structure becomes more complex.
+Using bottom-up fair enumeration, we were able to synthesize functions and
+  terms in boolean, natural number, and pair encodings, as well as
+  co-synthesize the encoding for booleans.

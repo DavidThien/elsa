@@ -12,11 +12,11 @@ unclear what should be used as behavioral constraints.
 %
 In this work we explore the possibility of synthesizing
 expressions in the untyped lambda calculus focusing mainly
-in the second problem.
-
+on the second problem.
+%
 More specifically, we focus on the problem of synthesizing
 functions over data encodings.
-%
+
 Data encodings in the lambda calculus are interesting
 because the same basic construct, lambda abstractions, is
 used to describe both functions and data.
@@ -25,13 +25,14 @@ This produces a tension which makes it hard to reason about
 lambda expressions because the distinction between data and
 function gets blurred.
 
-We recognize this as one of the main problems that makes it
+We recognize this as one of the main problems making it
 hard to specify behavioral constraints for lambda
 expressions.
 %
-For this reason we note that in general it is not enough to
-just specify the extensional behavior of functions and we
-examine the possibility of constraining their evaluation.
+Because of this lack of distinction, it is not enough, in
+general to just specify the extensional behavior of
+functions, and we examine the possibility of constraining
+their evaluation.
 %
 One of our key insights is that using free variables give us
 enough expressiveness to talk about the evaluation of
@@ -43,7 +44,7 @@ to specify their meaning precisely by giving a specification
 of their behavior in relation to some functions operating on
 them.
 %
-We call this a \emph{co-specification} of a data type.
+We call this a \emph{co-specification} of an encoding.
 %
 This opens the possibility of automatically deriving the
 encoding for some data type as a product of synthesis in a
@@ -55,8 +56,12 @@ prototype enumerative synthesizer.
 Despite its naive implementation we were able to apply it in
 practice to synthesize a series of interesting functions.
 %
-Perhaps most interestingly, our implementation was able to
-automatically derive the standard encoding for booleans.
+Using this technique, our implementation was able to derive
+the standard encoding for booleans.
+%
+The code for our implementation can be found at \\
+\href{https://github.com/DavidThien/elsa}
+{\texttt{https://github.com/DavidThien/elsa}}.
 
 % ; the meaning for a function only exists
 % in the context of a specific encoding of your chosen terms.

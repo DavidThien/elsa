@@ -1,10 +1,10 @@
 \section{Synthesizing Functions for a Given Encoding} \label{sec:synthesis}
 %
-As a first step we tackle the problem of synthesizing
+As a first step, we tackle the problem of synthesizing
 functions over a given encoding.
 %
 We begin with an overview of the standard encoding for the
-data types on which we focused our development.
+data types which we focused our development on.
 %
 We then explore how to specify the behavior of functions for
 their synthesis.
@@ -140,8 +140,8 @@ Recall the resulting encoding for \f{and} given in
 %
 This definition uses the first argument as the test.
 %
-Under normal order evaluation, this correspond to the usual
-short-circuit where the second argument is only
+Under normal order evaluation, this corresponds to the usual
+short-circuit evaluation where the second argument is only
 evaluated when the first one is known to be false.
 %
 The purely extensional specification given in \cref{sec:io}
@@ -198,7 +198,7 @@ where \f{succ} is the successor function defined as:
 \end{align*}
 
 This specification does not just fix the order in which $m$
-and $n$ are evaluated but also rule out various spurius
+and $n$ are evaluated but also rule out various spurious
 results which satisfy the incomplete specification given in
 \cref{sec:io}.
 %

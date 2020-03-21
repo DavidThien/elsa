@@ -1,3 +1,15 @@
+# Lambda Calculus Co-Synthesis
+
+This repository is synthesize for lambda calculus expressions.
+Here we introduce the notion of co-synthesis used to synthesize
+church encodings containing both functions and terms.
+The full write-up can be found in the `reoprts` folder.
+This code's pretty undocumented right now, maybe we'll fix that
+at some point.
+
+It was built on top of https://github.com/ucsd-progsys/elsa,
+a small lambda calculus evaluator.
+
 # ELSA
 
 `elsa` is a tiny language designed to build
