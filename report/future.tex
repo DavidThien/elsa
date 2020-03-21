@@ -1,23 +1,37 @@
 \section{Future Work}
-Although we were able to co-synthesize encodings for church expressions,
-  our synthesizer remains relatively naive.
-We have an intuition that there is some sort of structure to the types
-  of expressions which will actually prove useful for encoding terms
-  and functions, but we have yet to discover what that property is.
-Future work could look at discerning some of that structure, which could
-  potentially allow us to generate far more complex terms than we have now.
+%
+Although we were able to co-synthesize
+encodings for church expressions, our synthesizer remains
+relatively naive.
+%
+We have an intuition that there is more structure to the
+types of expressions which will actually prove useful for
+encoding terms and functions, but we have yet to discover
+what that property is.
+%
+Future work could look at discerning some of that structure,
+which could potentially allow us to generate more complex
+terms than we have now.
 
 Additionally, our current method for enumeration of the tuples in our
-  co-synthesis is fairly slow.
-Existing algorithms~\cite{monad-transformers} can help to speed up this
-  enumeration.
+co-synthesis is fairly slow.
+%
+This is currently the main limitation preventing us from
+applying the co-synthesize technique to other data types
+besides booleans.
+% Existing algorithms~\cite{monad-transformers} can help to speed up this
+  % enumeration.
 
 Finally, a greater challenge is posed for functions that are
-  significantly larger than the ones we have been able to synthesize.
-For example, generating the predecessor function requires significantly
-  more depth than we are currently able to handle.
+significantly larger than the ones we have been able to
+synthesize.
+%
+For example, generating the predecessor function requires
+significantly more depth than we are currently able to
+handle.
+%
 However, it is composed of several other functions whose composition remains
-  relatively small.
+relatively small.
 %
 \begin{align*}
   \f{pred} &= \lambda n.\lambda f.\lambda x.n\
@@ -25,12 +39,16 @@ However, it is composed of several other functions whose composition remains
   \f{pred} &= \f{if} (n==0)\ \f{then}\ 0\ \f{else}\ (n-1)
 \end{align*}
 %
-By this example, we can see that generating large functions may simply
-  involve the composition of multiple functions
-If we are able to add previously generated functions into some sort of
-  context, and then draw on them in future synthesis, we are able to
-  effectively increase the depth of terms we are able to generate.
-All of this synthesis happens within the typed world, so we can draw
-  on the plethora of other synthesis techniques in order to effectively
-  synthesize these larger functions, and the drop back down into untyped
-  lambda calculus when necessary.
+By this example, we can see that generating large functions
+may simply involve the composition of multiple functions
+%
+If we are able to add previously generated functions into
+some sort of context, and then draw on them in future
+synthesis, we are able to effectively increase the depth of
+terms we are able to generate.
+%
+All of this synthesis happens within the typed world, so we
+can draw on the plethora of other synthesis techniques in
+order to effectively synthesize these larger functions, and
+the drop back down into untyped lambda calculus when
+necessary.
