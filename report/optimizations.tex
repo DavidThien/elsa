@@ -12,9 +12,6 @@ Although this is a minor optimization, it allowed us to effectively decrease
   the depth of our search space by the number of arguments to a function, and
   we would not have been able to synthesize $\f{add}$ without it.
 
-\subsection{Normal Form Enumeration}
-We always generate terms in normal form.
-
 \subsection{Enumerating Closed Terms}
 One additional challenge in generating lambda calculus expressions lies in
   generating only closed terms; terms with no free variables.
@@ -32,3 +29,8 @@ This simplifies our enumeration greatly, as we no longer need to pass through
 
 Using De Bruijn indices has the added benefit of removing alpha renaming and
   alpha equivalence from our expression evaluation.
+
+\subsection{Beta-Normal Form Enumeration}
+The most subtle optimization that we have implemented is only generating terms
+  in beta-normal form.
+
