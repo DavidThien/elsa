@@ -1,56 +1,122 @@
 \section{Introduction} \label{sec:intro}
+%
+The untyped lambda calculus presents itself as an interesting
+target for synthesis.
+%
+On one hand, it is described by a very simple grammar
+defining a very unstructured program space for which it is
+hard to guide a search.
+%
+On the other hand, this same lack of structure makes it
+unclear what should be used as behavioral constraints.
+%
+In this work we explore the possibility of synthesizing
+expressions in the untyped lambda calculus focusing mainly
+in the second problem.
 
-Untyped lambda calculus provides and interesting target for synthesis for
-  two major reasons:
-  \begin{enumerate}
-    \item The grammar describing the language is very small, meaning that
-      small optimizations in the search process are very important to
-      constrain the search space as much as possible
-      %% TODO: This isn't quite the right description
-    \item Untyped lambda calculus uses the exact same grammar to describe
-      both terms, and functions; the meaning for a function only exists
-      in the context of a specific encoding of your chosen terms.
-  \end {enumerate}
-The second reason in particular is interesting, because it begs the
-  question of creating a specification for the behavior of functions
-  independently of a given encoding.
-This would allow users of the synthesizer to either pre-specify a
-  particular encoding of terms they are interested in synthesizing
-  functions for, or to specify the behavior of terms in the context of
-  function applications, and have the synthesizer synthesize both
-  an encoding for the terms, and the functions requested.
-We call synthesis of terms and functions from a single unified encoding
-  \emph{co-synthesis}.
+More specifically, we focus on the problem of synthesizing
+functions over data encodings.
+%
+Data encodings in the lambda calculus are interesting
+because the same basic construct, lambda abstractions, is
+used to describe both functions and data.
+%
+This produces a tension which makes it hard to reason about
+lambda expressions because the distinction between data and
+function gets blurred.
 
-\subsection{Grammar}
+We recognize this as one of the main problems that makes it
+hard to specify behavioral constraints for lambda
+expressions.
+%
+For this reason we note that in general it is not enough to
+just specify the extensional behavior of functions and we
+examine the possibility of constraining their evaluation.
+%
+One of our key insights is that using free variables give us
+enough expressiveness to talk about the evaluation of
+functions.
 
-The grammar for untyped lambda calculus is simply defined as:
-  \begin{grammar}
-    <expr> ::= x
-      \alt <expr> <expr>
-      \alt $\lambda$ x <expr>
-  \end{grammar}
-  where $x$ is a variable.
-Note that variables need not necessarily be bound by the immediately
-  preceeding lambda to be referenced.
-For our purposes, variables only need be bound in the ultimate term
-  that we eventually produce, as we can assume without loss of
-  generality that there is no outside environment that we reference
-  for synthesized terms or functions.
+Based on this idea we note that by looking at the
+introduction and elimination rules of data types we are able
+to specify their meaning precisely by giving a specification
+of their behavior in relation to some functions operating on
+them.
+%
+We call this a \emph{co-specification} of a data type.
+%
+This opens the possibility of automatically deriving the
+encoding for some data type as a product of synthesis in a
+process we dubbed \emph{co-synthesis}.
 
-This grammar is very compact, which means that our search space tends to
-  blow up because of the necessary depth of the search, rather than
-  because the number of possible terms enumerable at a given depth
-  is large.
+Finally, we proved these ideas in practice by implementing a
+prototype enumerative synthesizer.
+%
+Despite its naive implementation we were able to apply it in
+practice to synthesize a series of interesting functions.
+%
+Perhaps most interestingly, our implementation was able to
+automatically derive the standard encoding for booleans.
 
-\subsection{Evaluation Strategy}
+% ; the meaning for a function only exists
+% in the context of a specific encoding of your chosen terms.
 
-The meaning of a term in Lambda calculus, as in other programming languages,
-  depends on the evaluation strategy used to assign meaning to that term.
-For our purposes, we use normal order evaluation.
-Normal order evaluation evaluates the leftmost outtermost reducible
-  expression first.
-Although this will generate different terms than another strategy like
-  applicative order, there is nothing specialized about this synthesis
-  that requires normal order to be used above anything else.
-We have simply chosen normal order for consistency.
+
+% This makes it hard to
+
+% defining a very particular search space.
+% %
+
+% for two major reasons:
+%   \begin{enumerate}
+%     \item The grammar describing the language is very small, meaning that
+%       small optimizations in the search process are very important to
+%       constrain the search space as much as possible
+%       %% TODO: This isn't quite the right description
+%     \item Untyped lambda calculus uses the exact same grammar to describe
+%       both terms, and functions; the meaning for a function only exists
+%       in the context of a specific encoding of your chosen terms.
+%   \end {enumerate}
+% The second reason in particular is interesting, because it begs the
+%   question of creating a specification for the behavior of functions
+%   independently of a given encoding.
+% This would allow users of the synthesizer to either pre-specify a
+%   particular encoding of terms they are interested in synthesizing
+%   functions for, or to specify the behavior of terms in the context of
+%   function applications, and have the synthesizer synthesize both
+%   an encoding for the terms, and the functions requested.
+% We call synthesis of terms and functions from a single unified encoding
+%   \emph{co-synthesis}.
+
+% \subsection{Grammar}
+
+% The grammar for untyped lambda calculus is simply defined as:
+%   \begin{grammar}
+%     <expr> ::= x
+%       \alt <expr> <expr>
+%       \alt $\lambda$ x <expr>
+%   \end{grammar}
+%   where $x$ is a variable.
+% Note that variables need not necessarily be bound by the immediately
+%   preceeding lambda to be referenced.
+% For our purposes, variables only need be bound in the ultimate term
+%   that we eventually produce, as we can assume without loss of
+%   generality that there is no outside environment that we reference
+%   for synthesized terms or functions.
+
+% This grammar is very compact, which means that our search space tends to
+%   blow up because of the necessary depth of the search, rather than
+%   because the number of possible terms enumerable at a given depth
+%   is large.
+
+% \subsection{Evaluation Strategy}
+
+% The meaning of a term in Lambda calculus, as in other programming languages,
+%   depends on the evaluation strategy used to assign meaning to that term.
+% For our purposes, we use normal order evaluation.
+% Normal order evaluation evaluates the leftmost outtermost reducible
+%   expression first.
+% Although this will generate different terms than another strategy like
+%   applicative order, there is nothing specialized about this synthesis
+%   that requires normal order to be used above anything else.
+% We have simply chosen normal order for consistency.
